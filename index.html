@@ -1,32 +1,32 @@
-<!--TEST-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ADZ Solutions</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0c10;
-    --surface: #11141b;
-    --surface2: #181c26;
-    --accent: #00e5ff;
-    --accent2: #7b5ea7;
-    --text: #e8eaf0;
-    --muted: #6b7280;
-    --border: rgba(0,229,255,0.12);
-    --glow: rgba(0,229,255,0.18);
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --surface2: #eef1f6;
+    --accent: #1a6ef5;
+    --accent-light: #e8f0fe;
+    --accent2: #0d47a1;
+    --text: #0f1923;
+    --muted: #5c6b7a;
+    --border: rgba(26,110,245,0.12);
+    --shadow: 0 4px 24px rgba(15,25,35,0.08);
+    --shadow-lg: 0 12px 48px rgba(15,25,35,0.12);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
   html { scroll-behavior: smooth; }
 
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'DM Sans', sans-serif;
     overflow-x: hidden;
   }
 
@@ -38,36 +38,66 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 3rem;
+    padding: 0 4rem;
     height: 68px;
-    background: rgba(10,12,16,0.85);
-    backdrop-filter: blur(18px);
+    background: rgba(245,247,250,0.92);
+    backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 12px rgba(15,25,35,0.06);
   }
 
   .logo {
     font-family: 'Syne', sans-serif;
-    font-size: 1.35rem;
+    font-size: 1.4rem;
     font-weight: 800;
     letter-spacing: -0.03em;
     color: var(--text);
     text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
   }
 
   .logo span { color: var(--accent); }
 
-  nav { display: flex; gap: 0.25rem; }
+  /* Hamburger */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    z-index: 200;
+  }
+
+  .hamburger span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  nav {
+    display: flex;
+    gap: 0.25rem;
+  }
 
   nav a {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.78rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
     font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
     color: var(--muted);
     text-decoration: none;
-    padding: 0.5rem 1.1rem;
-    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
     transition: color 0.2s, background 0.2s;
     position: relative;
   }
@@ -75,22 +105,49 @@
   nav a::after {
     content: '';
     position: absolute;
-    bottom: 4px; left: 50%; right: 50%;
-    height: 1px;
+    bottom: 2px; left: 50%; right: 50%;
+    height: 2px;
     background: var(--accent);
     transition: left 0.25s, right 0.25s;
     border-radius: 2px;
   }
 
   nav a:hover { color: var(--text); }
-  nav a:hover::after { left: 1.1rem; right: 1.1rem; }
+  nav a:hover::after { left: 1rem; right: 1rem; }
   nav a.active { color: var(--accent); }
-  nav a.active::after { left: 1.1rem; right: 1.1rem; }
+  nav a.active::after { left: 1rem; right: 1rem; }
+
+  /* ── MOBILE NAV OVERLAY ── */
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--surface);
+    z-index: 150;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+  }
+
+  .mobile-nav.open { display: flex; }
+
+  .mobile-nav a {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .mobile-nav a:hover,
+  .mobile-nav a.active { color: var(--accent); }
 
   /* ── SECTIONS ── */
   section {
     min-height: 100vh;
-    padding: 120px 3rem 80px;
+    padding: 120px 4rem 80px;
     max-width: 1200px;
     margin: 0 auto;
   }
@@ -105,7 +162,8 @@
     position: relative;
   }
 
-  .home-bg {
+  /* Soft background shapes */
+  .bg-shapes {
     position: fixed;
     inset: 0;
     pointer-events: none;
@@ -113,35 +171,22 @@
     overflow: hidden;
   }
 
-  .grid-lines {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
-    background-size: 60px 60px;
-  }
-
-  .orb {
+  .shape {
     position: absolute;
     border-radius: 50%;
-    filter: blur(100px);
-    animation: pulse 8s ease-in-out infinite;
+    filter: blur(80px);
   }
 
-  .orb1 { width: 500px; height: 500px; top: -100px; right: -100px; background: rgba(0,229,255,0.07); }
-  .orb2 { width: 400px; height: 400px; bottom: 100px; left: -80px; background: rgba(123,94,167,0.08); animation-delay: -4s; }
-
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 0.7; }
-    50% { transform: scale(1.1); opacity: 1; }
-  }
+  .shape1 { width: 600px; height: 600px; top: -200px; right: -150px; background: rgba(26,110,245,0.08); }
+  .shape2 { width: 500px; height: 500px; bottom: -100px; left: -100px; background: rgba(26,110,245,0.05); }
+  .shape3 { width: 300px; height: 300px; top: 40%; left: 40%; background: rgba(100,180,255,0.06); }
 
   .home-content { position: relative; z-index: 1; }
 
   .eyebrow {
-    font-size: 0.72rem;
-    letter-spacing: 0.18em;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--accent);
     margin-bottom: 1.5rem;
@@ -152,27 +197,33 @@
 
   .eyebrow::before {
     content: '';
-    width: 32px; height: 1px;
+    width: 28px; height: 2px;
     background: var(--accent);
+    border-radius: 2px;
   }
 
   h1 {
     font-family: 'Syne', sans-serif;
-    font-size: clamp(2.8rem, 6vw, 5.5rem);
+    font-size: clamp(2.6rem, 5.5vw, 5rem);
     font-weight: 800;
-    line-height: 1.0;
+    line-height: 1.05;
     letter-spacing: -0.04em;
     margin-bottom: 1.5rem;
+    color: var(--text);
   }
 
-  h1 .accent-word { color: var(--accent); }
+  h1 .accent-word {
+    color: var(--accent);
+    position: relative;
+  }
 
   .home-desc {
-    font-size: 0.95rem;
-    line-height: 1.9;
+    font-size: 1rem;
+    line-height: 1.85;
     color: var(--muted);
-    max-width: 520px;
-    margin-bottom: 3rem;
+    max-width: 500px;
+    margin-bottom: 2.5rem;
+    font-weight: 300;
   }
 
   .btn-group { display: flex; gap: 1rem; flex-wrap: wrap; }
@@ -182,12 +233,10 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.85rem 2rem;
-    border-radius: 4px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.78rem;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
     font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
     text-decoration: none;
     transition: all 0.25s;
     cursor: pointer;
@@ -196,73 +245,100 @@
 
   .btn-primary {
     background: var(--accent);
-    color: #000;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(26,110,245,0.3);
   }
-  .btn-primary:hover { background: #33ecff; box-shadow: 0 0 24px rgba(0,229,255,0.35); }
+  .btn-primary:hover {
+    background: var(--accent2);
+    box-shadow: 0 6px 24px rgba(26,110,245,0.4);
+    transform: translateY(-1px);
+  }
 
   .btn-outline {
-    background: transparent;
+    background: var(--surface);
     color: var(--text);
-    border: 1px solid var(--border);
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow);
   }
-  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-outline:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
 
-  .stats {
+  /* Trusted badge */
+  .trust-bar {
     display: flex;
-    gap: 3rem;
-    margin-top: 5rem;
-    padding-top: 3rem;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 4rem;
+    padding-top: 2.5rem;
     border-top: 1px solid var(--border);
   }
 
-  .stat-num {
-    font-family: 'Syne', sans-serif;
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: var(--text);
-    display: block;
-  }
-
-  .stat-label {
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
+  .trust-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .trust-badges {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+    box-shadow: var(--shadow);
   }
 
   /* ── SECTION HEADERS ── */
   .section-tag {
-    font-size: 0.7rem;
-    letter-spacing: 0.2em;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--accent);
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.6rem;
   }
 
   .section-tag::before {
     content: '';
-    width: 20px; height: 1px;
+    width: 16px; height: 2px;
     background: var(--accent);
+    border-radius: 2px;
   }
 
   h2 {
     font-family: 'Syne', sans-serif;
-    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-size: clamp(1.8rem, 3.5vw, 3rem);
     font-weight: 800;
     letter-spacing: -0.03em;
-    line-height: 1.1;
-    margin-bottom: 1.5rem;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+    color: var(--text);
   }
 
   .section-intro {
-    font-size: 0.9rem;
-    line-height: 1.9;
+    font-size: 0.95rem;
+    line-height: 1.85;
     color: var(--muted);
-    max-width: 540px;
-    margin-bottom: 4rem;
+    max-width: 520px;
+    margin-bottom: 3.5rem;
+    font-weight: 300;
   }
 
   /* ── SERVICES ── */
@@ -270,18 +346,16 @@
 
   .services-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
   }
 
   .service-card {
     background: var(--surface);
-    padding: 2.5rem;
-    transition: background 0.25s;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    transition: all 0.25s;
     position: relative;
     overflow: hidden;
   }
@@ -290,45 +364,46 @@
     content: '';
     position: absolute;
     top: 0; left: 0;
-    width: 100%; height: 2px;
-    background: linear-gradient(90deg, var(--accent), transparent);
+    width: 100%; height: 3px;
+    background: linear-gradient(90deg, var(--accent), #64b4ff);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.35s;
+    border-radius: 3px 3px 0 0;
   }
 
-  .service-card:hover { background: var(--surface2); }
+  .service-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+    border-color: rgba(26,110,245,0.2);
+  }
+
   .service-card:hover::before { transform: scaleX(1); }
 
-  .service-icon {
-    font-size: 1.8rem;
+  .service-icon-wrap {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    background: var(--accent-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
     margin-bottom: 1.25rem;
-    display: block;
   }
 
   .service-card h3 {
     font-family: 'Syne', sans-serif;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.6rem;
     color: var(--text);
   }
 
   .service-card p {
-    font-size: 0.82rem;
-    line-height: 1.85;
+    font-size: 0.85rem;
+    line-height: 1.8;
     color: var(--muted);
-  }
-
-  .service-num {
-    position: absolute;
-    bottom: 1.5rem; right: 1.75rem;
-    font-family: 'Syne', sans-serif;
-    font-size: 3.5rem;
-    font-weight: 800;
-    color: rgba(255,255,255,0.03);
-    line-height: 1;
-    user-select: none;
+    font-weight: 300;
   }
 
   /* ── ABOUT ── */
@@ -337,11 +412,11 @@
   .about-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6rem;
+    gap: 5rem;
     align-items: start;
   }
 
-  .about-values { margin-top: 3rem; }
+  .about-values { margin-top: 2.5rem; }
 
   .value-item {
     display: flex;
@@ -353,143 +428,163 @@
 
   .value-item:first-child { border-top: 1px solid var(--border); }
 
-  .value-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
-    margin-top: 6px;
+  .value-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--accent-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
     flex-shrink: 0;
-    box-shadow: 0 0 8px var(--accent);
+    margin-top: 2px;
   }
 
   .value-item h4 {
     font-family: 'Syne', sans-serif;
     font-size: 0.95rem;
     font-weight: 700;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.3rem;
+    color: var(--text);
   }
 
   .value-item p {
-    font-size: 0.8rem;
+    font-size: 0.83rem;
     line-height: 1.75;
     color: var(--muted);
+    font-weight: 300;
   }
 
-  .about-visual {
-    position: relative;
-    padding-top: 2rem;
-  }
-
-  .terminal-box {
+  /* Info card */
+  .about-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    box-shadow: var(--shadow-lg);
+    position: sticky;
+    top: 90px;
   }
 
-  .terminal-header {
+  .about-card-header {
+    background: var(--accent);
+    padding: 1.75rem 2rem;
+  }
+
+  .about-card-header h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.4rem;
+  }
+
+  .about-card-header p {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.75);
+    font-weight: 300;
+  }
+
+  .about-card-body { padding: 1.5rem 2rem; }
+
+  .info-row {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.85rem 1.25rem;
-    background: var(--surface2);
+    padding: 0.9rem 0;
     border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
   }
 
-  .dot-r { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
-  .dot-y { width: 11px; height: 11px; border-radius: 50%; background: #febc2e; }
-  .dot-g { width: 11px; height: 11px; border-radius: 50%; background: #28c840; }
+  .info-row:last-child { border-bottom: none; }
 
-  .terminal-title {
-    font-size: 0.7rem;
-    color: var(--muted);
-    margin-left: auto;
-    letter-spacing: 0.05em;
-  }
-
-  .terminal-body {
-    padding: 1.5rem 1.75rem;
-    font-size: 0.78rem;
-    line-height: 2;
-  }
-
-  .t-comment { color: #4a5568; }
-  .t-key { color: var(--accent); }
-  .t-str { color: #a3e635; }
-  .t-num { color: #fb923c; }
-  .t-bool { color: var(--accent2); }
-  .t-cursor { display: inline-block; width: 8px; height: 1em; background: var(--accent); animation: blink 1.1s step-end infinite; vertical-align: text-bottom; margin-left: 2px; }
-
-  @keyframes blink { 50% { opacity: 0; } }
+  .info-row .label { color: var(--muted); font-weight: 300; }
+  .info-row .value { font-weight: 600; color: var(--text); font-family: 'Syne', sans-serif; }
+  .info-row .value.green { color: #16a34a; }
 
   /* ── CONTACT ── */
   #contact { padding-top: 120px; }
 
   .contact-layout {
     display: grid;
-    grid-template-columns: 1fr 1.4fr;
-    gap: 5rem;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 4rem;
     align-items: start;
   }
 
-  .contact-info { padding-top: 1rem; }
+  .contact-info { padding-top: 0.5rem; }
 
   .contact-item {
     display: flex;
-    gap: 1.25rem;
-    padding: 1.75rem 0;
+    gap: 1rem;
+    padding: 1.4rem 0;
     border-bottom: 1px solid var(--border);
   }
 
   .contact-item:first-of-type { border-top: 1px solid var(--border); }
 
-  .contact-icon {
-    font-size: 1.3rem;
+  .contact-icon-wrap {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--accent-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
     flex-shrink: 0;
-    margin-top: 2px;
   }
 
   .contact-item h4 {
     font-family: 'Syne', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    margin-bottom: 0.3rem;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
   }
 
   .contact-item p, .contact-item a {
-    font-size: 0.8rem;
-    color: var(--muted);
+    font-size: 0.88rem;
+    color: var(--text);
     text-decoration: none;
-    line-height: 1.6;
+    font-weight: 400;
+    line-height: 1.5;
   }
 
   .contact-item a:hover { color: var(--accent); }
 
-  .contact-form { display: flex; flex-direction: column; gap: 1.25rem; }
+  /* Form */
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: var(--shadow);
+  }
+
+  .contact-form { display: flex; flex-direction: column; gap: 1.1rem; }
 
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-  .field { display: flex; flex-direction: column; gap: 0.5rem; }
+  .field { display: flex; flex-direction: column; gap: 0.4rem; }
 
   .field label {
-    font-size: 0.7rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--text);
   }
 
   .field input,
   .field select,
   .field textarea {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 0.85rem 1rem;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.82rem;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
     color: var(--text);
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -497,72 +592,90 @@
   }
 
   .field input::placeholder,
-  .field textarea::placeholder { color: #374151; }
+  .field textarea::placeholder { color: #aab0ba; }
 
   .field input:focus,
   .field select:focus,
   .field textarea:focus {
-    border-color: rgba(0,229,255,0.4);
-    box-shadow: 0 0 0 3px rgba(0,229,255,0.06);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26,110,245,0.1);
+    background: var(--surface);
   }
 
   .field select { appearance: none; cursor: pointer; }
   .field select option { background: var(--surface); }
 
   .submit-btn {
-    align-self: flex-start;
     background: var(--accent);
-    color: #000;
+    color: #fff;
     border: none;
-    padding: 0.9rem 2.5rem;
-    border-radius: 4px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.78rem;
+    padding: 0.9rem 2rem;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
     font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
     cursor: pointer;
     transition: all 0.25s;
+    box-shadow: 0 4px 16px rgba(26,110,245,0.3);
+    width: 100%;
+    margin-top: 0.5rem;
   }
 
-  .submit-btn:hover { background: #33ecff; box-shadow: 0 0 24px rgba(0,229,255,0.3); }
+  .submit-btn:hover {
+    background: var(--accent2);
+    box-shadow: 0 6px 24px rgba(26,110,245,0.4);
+    transform: translateY(-1px);
+  }
 
   /* ── FOOTER ── */
   footer {
     border-top: 1px solid var(--border);
-    padding: 2rem 3rem;
+    padding: 2rem 4rem;
     max-width: 1200px;
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     color: var(--muted);
-    letter-spacing: 0.06em;
   }
 
   /* ── RESPONSIVE ── */
-  @media (max-width: 768px) {
-    header { padding: 0 1.25rem; }
-    nav a { padding: 0.5rem 0.65rem; font-size: 0.7rem; }
-    section { padding: 100px 1.25rem 60px; }
-    .about-layout, .contact-layout { grid-template-columns: 1fr; gap: 3rem; }
-    .stats { gap: 1.5rem; flex-wrap: wrap; }
+  @media (max-width: 900px) {
+    header { padding: 0 1.5rem; }
+    nav { display: none; }
+    .hamburger { display: flex; }
+
+    section { padding: 100px 1.5rem 60px; }
+
+    .services-grid { grid-template-columns: 1fr 1fr; }
+    .about-layout { grid-template-columns: 1fr; gap: 2.5rem; }
+    .about-card { position: static; }
+    .contact-layout { grid-template-columns: 1fr; gap: 2.5rem; }
     .form-row { grid-template-columns: 1fr; }
-    footer { flex-direction: column; gap: 0.5rem; text-align: center; }
+    footer { flex-direction: column; gap: 0.5rem; text-align: center; padding: 2rem 1.5rem; }
+  }
+
+  @media (max-width: 580px) {
+    .services-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 2.2rem; }
+    .trust-bar { flex-direction: column; align-items: flex-start; }
+    .btn-group { flex-direction: column; }
+    .btn { justify-content: center; }
+    .form-card { padding: 1.5rem; }
   }
 </style>
 </head>
 <body>
 
 <!-- Background -->
-<div class="home-bg">
-  <div class="grid-lines"></div>
-  <div class="orb orb1"></div>
-  <div class="orb orb2"></div>
+<div class="bg-shapes">
+  <div class="shape shape1"></div>
+  <div class="shape shape2"></div>
+  <div class="shape shape3"></div>
 </div>
 
-<!-- HEADER -->
+<!-- Header -->
 <header>
   <a href="#home" class="logo">ADZ<span>Solutions</span></a>
   <nav>
@@ -571,9 +684,20 @@
     <a href="#about" onclick="setActive(this)">About</a>
     <a href="#contact" onclick="setActive(this)">Contact</a>
   </nav>
+  <button class="hamburger" id="hamburger" aria-label="Open menu" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </button>
 </header>
 
-<!-- HOME -->
+<!-- Mobile Nav -->
+<div class="mobile-nav" id="mobileNav">
+  <a href="#home" onclick="closeMenu(); setMobileActive(this)">Home</a>
+  <a href="#services" onclick="closeMenu(); setMobileActive(this)">Services</a>
+  <a href="#about" onclick="closeMenu(); setMobileActive(this)">About</a>
+  <a href="#contact" onclick="closeMenu(); setMobileActive(this)">Contact</a>
+</div>
+
+<!-- Home -->
 <section id="home">
   <div class="home-content">
     <p class="eyebrow">IT Consulting &amp; Solutions</p>
@@ -586,27 +710,20 @@
       We help small and mid-size businesses design, deploy, and maintain the IT infrastructure they need to operate with confidence — without the enterprise price tag.
     </p>
     <div class="btn-group">
-      <a href="#services" class="btn btn-primary" onclick="setActive(document.querySelector('nav a:nth-child(2)'))">Our Services →</a>
-      <a href="#contact" class="btn btn-outline" onclick="setActive(document.querySelector('nav a:nth-child(4)'))">Get in Touch</a>
+      <a href="#services" class="btn btn-primary">Our Services →</a>
+      <a href="#contact" class="btn btn-outline">Get in Touch</a>
     </div>
-    <div class="stats">
-      <div>
-        <span class="stat-num">200+</span>
-        <span class="stat-label">Clients Served</span>
-      </div>
-      <div>
-        <span class="stat-num">12yr</span>
-        <span class="stat-label">In Business</span>
-      </div>
-      <div>
-        <span class="stat-num">99.9%</span>
-        <span class="stat-label">Uptime SLA</span>
+    <div class="trust-bar">
+      <span class="trust-label">Certified in</span>
+      <div class="trust-badges">
+        <span class="badge">Microsoft 365</span>
+        <span class="badge">Marlton, NJ</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- SERVICES -->
+<!-- Services -->
 <section id="services">
   <p class="section-tag">What We Do</p>
   <h2>End-to-end IT<br>expertise</h2>
@@ -614,45 +731,39 @@
 
   <div class="services-grid">
     <div class="service-card">
-      <span class="service-icon">🔒</span>
-      <h3>Cybersecurity</h3>
-      <p>Vulnerability assessments, endpoint protection, firewall management, and employee security training to keep your business safe from modern threats.</p>
-      <span class="service-num">01</span>
+      <div class="service-icon-wrap"></div>
+      <h3></h3>
+      <p></p>
     </div>
     <div class="service-card">
-      <span class="service-icon">☁️</span>
-      <h3>Cloud Solutions</h3>
-      <p>Cloud migration, Azure and AWS management, backup strategy, and hybrid infrastructure design for scalability without overpaying.</p>
-      <span class="service-num">02</span>
+      <div class="service-icon-wrap"></div>
+      <h3></h3>
+      <p></p>
     </div>
     <div class="service-card">
-      <span class="service-icon">🖥️</span>
-      <h3>Managed IT Support</h3>
-      <p>24/7 helpdesk, proactive monitoring, patch management, and on-site support — your outsourced IT department.</p>
-      <span class="service-num">03</span>
+      <div class="service-icon-wrap"></div>
+      <h3></h3>
+      <p></p>
     </div>
     <div class="service-card">
-      <span class="service-icon">🌐</span>
-      <h3>Network Infrastructure</h3>
-      <p>Design and deployment of wired and wireless networks, VPNs, SD-WAN, and structured cabling for offices of any size.</p>
-      <span class="service-num">04</span>
+      <div class="service-icon-wrap"></div>
+      <h3></h3>
+      <p></p>
     </div>
     <div class="service-card">
-      <span class="service-icon">💾</span>
-      <h3>Backup &amp; Recovery</h3>
-      <p>Automated backup systems, disaster recovery planning, and rapid restoration procedures so your data is never truly at risk.</p>
-      <span class="service-num">05</span>
+      <div class="service-icon-wrap"></div>
+      <h3></h3>
+      <p></p>
     </div>
     <div class="service-card">
-      <span class="service-icon">📋</span>
-      <h3>IT Consulting &amp; Strategy</h3>
-      <p>Technology roadmaps, vendor selection, compliance guidance, and strategic planning aligned with your business goals.</p>
-      <span class="service-num">06</span>
+      <div class="service-icon-wrap"></div>
+      <h3></h3>
+      <p></p>
     </div>
   </div>
 </section>
 
-<!-- ABOUT -->
+<!-- About -->
 <section id="about">
   <div class="about-layout">
     <div>
@@ -662,21 +773,21 @@
 
       <div class="about-values">
         <div class="value-item">
-          <div class="value-dot"></div>
+          <div class="value-icon">💬</div>
           <div>
             <h4>Transparency First</h4>
             <p>We explain what we're doing and why. No jargon, no hidden fees, no upselling you on what you don't need.</p>
           </div>
         </div>
         <div class="value-item">
-          <div class="value-dot"></div>
+          <div class="value-icon">🛡️</div>
           <div>
             <h4>Proactive Over Reactive</h4>
             <p>We prevent problems before they happen — not just show up when things break.</p>
           </div>
         </div>
         <div class="value-item">
-          <div class="value-dot"></div>
+          <div class="value-icon">🤝</div>
           <div>
             <h4>Long-Term Partnership</h4>
             <p>We grow with your business and stay invested in your success well beyond the initial engagement.</p>
@@ -685,37 +796,32 @@
       </div>
     </div>
 
-    <div class="about-visual">
-      <div class="terminal-box">
-        <div class="terminal-header">
-          <div class="dot-r"></div>
-          <div class="dot-y"></div>
-          <div class="dot-g"></div>
-          <span class="terminal-title">ADZ Solutions.config.json</span>
+    <div>
+      <div class="about-card">
+        <div class="about-card-header">
+          <h3>ADZ Solutions LLC</h3>
+          <p>Your local IT partner in Marlton, NJ</p>
         </div>
-        <div class="terminal-body">
-          <span class="t-comment">// Company Profile</span><br>
-          {<br>
-          &nbsp;&nbsp;<span class="t-key">"company"</span>: <span class="t-str">"ADZ Solutions IT Consulting"</span>,<br>
-          &nbsp;&nbsp;<span class="t-key">"founded"</span>: <span class="t-num">2013</span>,<br>
-          &nbsp;&nbsp;<span class="t-key">"team_size"</span>: <span class="t-num">18</span>,<br>
-          &nbsp;&nbsp;<span class="t-key">"certifications"</span>: [<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;<span class="t-str">"Microsoft 365"</span>,<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;<span class="t-str">"AWS Solutions Architect"</span>,<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;<span class="t-str">"CompTIA Security+"</span><br>
-          &nbsp;&nbsp;],<br>
-          &nbsp;&nbsp;<span class="t-key">"24_7_support"</span>: <span class="t-bool">true</span>,<br>
-          &nbsp;&nbsp;<span class="t-key">"uptime_sla"</span>: <span class="t-str">"99.9%"</span>,<br>
-          &nbsp;&nbsp;<span class="t-key">"clients_served"</span>: <span class="t-num">200</span>,<br>
-          &nbsp;&nbsp;<span class="t-key">"status"</span>: <span class="t-str">"ready_to_help"</span><br>
-          }<span class="t-cursor"></span>
+        <div class="about-card-body">
+          <div class="info-row">
+            <span class="label">Location</span>
+            <span class="value">Marlton, NJ</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Support Hours</span>
+            <span class="value">Mon–Fri, 8am–6pm</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Microsoft 365</span>
+            <span class="value green">Certified ✓</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CONTACT -->
+<!-- Contact -->
 <section id="contact">
   <p class="section-tag">Get In Touch</p>
   <h2>Let's talk about<br>your IT needs</h2>
@@ -723,28 +829,28 @@
   <div class="contact-layout">
     <div class="contact-info">
       <div class="contact-item">
-        <span class="contact-icon">📍</span>
+        <div class="contact-icon-wrap">📍</div>
         <div>
           <h4>Office</h4>
           <p>23 Milford Dr<br>Marlton, NJ 08053</p>
         </div>
       </div>
       <div class="contact-item">
-        <span class="contact-icon">📞</span>
+        <div class="contact-icon-wrap">📞</div>
         <div>
           <h4>Phone</h4>
-          <a href="tel:+15550000000">(856) 719-1356</a>
+          <a href="tel:+18567191356">(856) 719-1356</a>
         </div>
       </div>
       <div class="contact-item">
-        <span class="contact-icon">✉️</span>
+        <div class="contact-icon-wrap">✉️</div>
         <div>
           <h4>Email</h4>
-          <a href=>Email</a>
+          <a href="#">hello@adzsolutions.com</a>
         </div>
       </div>
       <div class="contact-item">
-        <span class="contact-icon">🕐</span>
+        <div class="contact-icon-wrap">🕐</div>
         <div>
           <h4>Hours</h4>
           <p>Mon–Fri: 8am – 6pm</p>
@@ -752,60 +858,71 @@
       </div>
     </div>
 
-	<form class="contact-form" action="https://formspree.io/f/mkopwoyl" method="POST">
-  <div class="form-row">
-    <div class="field">
-      <label>First Name</label>
-      <input type="text" name="first-name" placeholder="Required" required>
+    <div class="form-card">
+      <form class="contact-form" action="https://formspree.io/f/mkopwoyl" method="POST">
+        <div class="form-row">
+          <div class="field">
+            <label>First Name</label>
+            <input type="text" name="first-name" placeholder="Jane" required>
+          </div>
+          <div class="field">
+            <label>Last Name</label>
+            <input type="text" name="last-name" placeholder="Smith">
+          </div>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" name="email" placeholder="jane@company.com" required>
+        </div>
+        <div class="field">
+          <label>Company</label>
+          <input type="text" name="company" placeholder="Your Business">
+        </div>
+        <div class="field">
+          <label>Message</label>
+          <textarea rows="4" name="message" placeholder="Tell us about your IT needs..."></textarea>
+        </div>
+        <button type="submit" class="submit-btn">Send Message →</button>
+      </form>
     </div>
-    <div class="field">
-      <label>Last Name</label>
-      <input type="text" name="last-name" placeholder="">
-    </div>
-  </div>
-  <div class="field">
-    <label>Email</label>
-    <input type="email" name="email" placeholder="name@example.com">
-  </div>
-  <div class="field">
-    <label>Company</label>
-    <input type="text" name="company" placeholder="Your Business">
-  </div>
-  <div class="field">
-    <label>Service Interest</label>
-    <select name="service">
-      <option value="">Select a service...</option>
-      <option>Managed IT Support</option>
-      <option>Cybersecurity</option>
-      <option>Cloud Solutions</option>
-      <option>Network Infrastructure</option>
-      <option>Backup &amp; Recovery</option>
-      <option>IT Consulting &amp; Strategy</option>
-      <option>Other</option>
-    </select>
-  </div>
-  <div class="field">
-    <label>Message</label>
-    <textarea rows="5" name="message"></textarea>
-  </div>
-  <button type="submit" class="submit-btn">Send Message →</button>
-</form>
   </div>
 </section>
 
 <footer>
   <span>© 2026 ADZ Solutions LLC. All rights reserved.</span>
-  <span>Built for business. Ready for anything.</span>
+  <span>Marlton, NJ · (856) 719-1356</span>
 </footer>
 
 <script>
-  // Active nav link on click
+  // Desktop nav active on click
   function setActive(el) {
     document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
     el.classList.add('active');
   }
 
-  // Update active nav on scroll
+  // Mobile nav
+  function toggleMenu() {
+    const menu = document.getElementById('mobileNav');
+    const btn = document.getElementById('hamburger');
+    menu.classList.toggle('open');
+    btn.classList.toggle('open');
+  }
+
+  function closeMenu() {
+    document.getElementById('mobileNav').classList.remove('open');
+    document.getElementById('hamburger').classList.remove('open');
+  }
+
+  function setMobileActive(el) {
+    document.querySelectorAll('.mobile-nav a').forEach(a => a.classList.remove('active'));
+    el.classList.add('active');
+    const href = el.getAttribute('href');
+    document.querySelectorAll('nav a').forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === href);
+    });
+  }
+
+  // Scroll-based active nav
   const sections = document.querySelectorAll('section');
   const navLinks = document.querySelectorAll('nav a');
 
@@ -821,7 +938,6 @@
   }, { threshold: 0.4 });
 
   sections.forEach(s => observer.observe(s));
-
 </script>
 </body>
 </html>
