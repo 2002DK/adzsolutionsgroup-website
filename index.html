@@ -57,10 +57,8 @@
     align-items: center;
     gap: 0.15rem;
   }
-
   .logo span { color: var(--accent); }
 
-  /* Hamburger */
   .hamburger {
     display: none;
     flex-direction: column;
@@ -71,80 +69,55 @@
     padding: 4px;
     z-index: 200;
   }
-
   .hamburger span {
     display: block;
-    width: 24px;
-    height: 2px;
+    width: 24px; height: 2px;
     background: var(--text);
     border-radius: 2px;
     transition: all 0.3s;
   }
-
   .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
   .hamburger.open span:nth-child(2) { opacity: 0; }
   .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-  nav {
-    display: flex;
-    gap: 0.25rem;
-  }
-
+  nav { display: flex; gap: 0.25rem; }
   nav a {
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
-    font-weight: 500;
-    color: var(--muted);
-    text-decoration: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
+    font-size: 0.88rem; font-weight: 500;
+    color: var(--muted); text-decoration: none;
+    padding: 0.5rem 1rem; border-radius: 6px;
     transition: color 0.2s, background 0.2s;
     position: relative;
   }
-
   nav a::after {
     content: '';
     position: absolute;
     bottom: 2px; left: 50%; right: 50%;
-    height: 2px;
-    background: var(--accent);
+    height: 2px; background: var(--accent);
     transition: left 0.25s, right 0.25s;
     border-radius: 2px;
   }
-
   nav a:hover { color: var(--text); }
   nav a:hover::after { left: 1rem; right: 1rem; }
   nav a.active { color: var(--accent); }
   nav a.active::after { left: 1rem; right: 1rem; }
 
-  /* ── MOBILE NAV OVERLAY ── */
   .mobile-nav {
     display: none;
-    position: fixed;
-    inset: 0;
-    background: var(--surface);
-    z-index: 150;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    position: fixed; inset: 0;
+    background: var(--surface); z-index: 150;
+    flex-direction: column; align-items: center; justify-content: center;
     gap: 2rem;
   }
-
   .mobile-nav.open { display: flex; }
-
   .mobile-nav a {
     font-family: 'Syne', sans-serif;
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--text);
-    text-decoration: none;
+    font-size: 2rem; font-weight: 700;
+    color: var(--text); text-decoration: none;
     transition: color 0.2s;
   }
+  .mobile-nav a:hover, .mobile-nav a.active { color: var(--accent); }
 
-  .mobile-nav a:hover,
-  .mobile-nav a.active { color: var(--accent); }
-
-  /* ── SECTIONS ── */
   section {
     min-height: 100vh;
     padding: 120px 4rem 80px;
@@ -152,31 +125,13 @@
     margin: 0 auto;
   }
 
-  /* ── HOME ── */
   #home {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-height: 100vh;
-    padding-top: 68px;
-    position: relative;
+    display: flex; flex-direction: column; justify-content: center;
+    min-height: 100vh; padding-top: 68px; position: relative;
   }
 
-  /* Soft background shapes */
-  .bg-shapes {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-  }
-
-  .shape {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-  }
-
+  .bg-shapes { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .shape { position: absolute; border-radius: 50%; filter: blur(80px); }
   .shape1 { width: 600px; height: 600px; top: -200px; right: -150px; background: rgba(26,110,245,0.08); }
   .shape2 { width: 500px; height: 500px; bottom: -100px; left: -100px; background: rgba(26,110,245,0.05); }
   .shape3 { width: 300px; height: 300px; top: 40%; left: 40%; background: rgba(100,180,255,0.06); }
@@ -184,478 +139,222 @@
   .home-content { position: relative; z-index: 1; }
 
   .eyebrow {
-    font-size: 0.78rem;
-    font-weight: 500;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--accent);
+    font-size: 0.78rem; font-weight: 500; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--accent);
     margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    display: flex; align-items: center; gap: 0.75rem;
   }
-
-  .eyebrow::before {
-    content: '';
-    width: 28px; height: 2px;
-    background: var(--accent);
-    border-radius: 2px;
-  }
+  .eyebrow::before { content: ''; width: 28px; height: 2px; background: var(--accent); border-radius: 2px; }
 
   h1 {
     font-family: 'Syne', sans-serif;
     font-size: clamp(2.6rem, 5.5vw, 5rem);
-    font-weight: 800;
-    line-height: 1.05;
-    letter-spacing: -0.04em;
-    margin-bottom: 1.5rem;
-    color: var(--text);
+    font-weight: 800; line-height: 1.05;
+    letter-spacing: -0.04em; margin-bottom: 1.5rem; color: var(--text);
   }
-
-  h1 .accent-word {
-    color: var(--accent);
-    position: relative;
-  }
+  h1 .accent-word { color: var(--accent); position: relative; }
 
   .home-desc {
-    font-size: 1rem;
-    line-height: 1.85;
-    color: var(--muted);
-    max-width: 500px;
-    margin-bottom: 2.5rem;
-    font-weight: 300;
+    font-size: 1rem; line-height: 1.85; color: var(--muted);
+    max-width: 500px; margin-bottom: 2.5rem; font-weight: 300;
   }
 
   .btn-group { display: flex; gap: 1rem; flex-wrap: wrap; }
-
   .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.85rem 2rem;
-    border-radius: 8px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.25s;
-    cursor: pointer;
-    border: none;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.85rem 2rem; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
+    text-decoration: none; transition: all 0.25s; cursor: pointer; border: none;
   }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 16px rgba(26,110,245,0.3); }
+  .btn-primary:hover { background: var(--accent2); box-shadow: 0 6px 24px rgba(26,110,245,0.4); transform: translateY(-1px); }
+  .btn-outline { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); box-shadow: var(--shadow); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
 
-  .btn-primary {
-    background: var(--accent);
-    color: #fff;
-    box-shadow: 0 4px 16px rgba(26,110,245,0.3);
-  }
-  .btn-primary:hover {
-    background: var(--accent2);
-    box-shadow: 0 6px 24px rgba(26,110,245,0.4);
-    transform: translateY(-1px);
-  }
-
-  .btn-outline {
-    background: var(--surface);
-    color: var(--text);
-    border: 1.5px solid var(--border);
-    box-shadow: var(--shadow);
-  }
-  .btn-outline:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    transform: translateY(-1px);
-  }
-
-  /* Trusted badge */
   .trust-bar {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 4rem;
-    padding-top: 2.5rem;
+    display: flex; align-items: center; gap: 1rem;
+    margin-top: 4rem; padding-top: 2.5rem;
     border-top: 1px solid var(--border);
   }
-
   .trust-label {
-    font-size: 0.78rem;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-    white-space: nowrap;
+    font-size: 0.78rem; font-weight: 500; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted); white-space: nowrap;
   }
-
-  .trust-badges {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
+  .trust-badges { display: flex; gap: 0.75rem; flex-wrap: wrap; }
   .badge {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 0.35rem 0.9rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--muted);
-    box-shadow: var(--shadow);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 0.35rem 0.9rem;
+    font-size: 0.75rem; font-weight: 500; color: var(--muted); box-shadow: var(--shadow);
   }
 
-  /* ── SECTION HEADERS ── */
   .section-tag {
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
+    font-size: 0.75rem; font-weight: 500; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.6rem;
   }
-
-  .section-tag::before {
-    content: '';
-    width: 16px; height: 2px;
-    background: var(--accent);
-    border-radius: 2px;
-  }
+  .section-tag::before { content: ''; width: 16px; height: 2px; background: var(--accent); border-radius: 2px; }
 
   h2 {
     font-family: 'Syne', sans-serif;
     font-size: clamp(1.8rem, 3.5vw, 3rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.15;
-    margin-bottom: 1rem;
-    color: var(--text);
+    font-weight: 800; letter-spacing: -0.03em;
+    line-height: 1.15; margin-bottom: 1rem; color: var(--text);
   }
-
   .section-intro {
-    font-size: 0.95rem;
-    line-height: 1.85;
-    color: var(--muted);
-    max-width: 520px;
-    margin-bottom: 3.5rem;
-    font-weight: 300;
+    font-size: 0.95rem; line-height: 1.85; color: var(--muted);
+    max-width: 520px; margin-bottom: 3.5rem; font-weight: 300;
   }
 
-  /* ── SERVICES ── */
   #services { padding-top: 120px; }
-
-  .services-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-  }
-
+  .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
   .service-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 2rem;
-    transition: all 0.25s;
-    position: relative;
-    overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 2rem; transition: all 0.25s;
+    position: relative; overflow: hidden;
   }
-
   .service-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
+    content: ''; position: absolute; top: 0; left: 0;
     width: 100%; height: 3px;
     background: linear-gradient(90deg, var(--accent), #64b4ff);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.35s;
+    transform: scaleX(0); transform-origin: left; transition: transform 0.35s;
     border-radius: 3px 3px 0 0;
   }
-
-  .service-card:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-3px);
-    border-color: rgba(26,110,245,0.2);
-  }
-
+  .service-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); border-color: rgba(26,110,245,0.2); }
   .service-card:hover::before { transform: scaleX(1); }
-
   .service-icon-wrap {
-    width: 48px; height: 48px;
-    border-radius: 10px;
-    background: var(--accent-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    margin-bottom: 1.25rem;
+    width: 48px; height: 48px; border-radius: 10px;
+    background: var(--accent-light); display: flex;
+    align-items: center; justify-content: center;
+    font-size: 1.4rem; margin-bottom: 1.25rem;
   }
+  .service-card h3 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 0.6rem; color: var(--text); }
+  .service-card p { font-size: 0.85rem; line-height: 1.8; color: var(--muted); font-weight: 300; }
 
-  .service-card h3 {
-    font-family: 'Syne', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: 0.6rem;
-    color: var(--text);
-  }
-
-  .service-card p {
-    font-size: 0.85rem;
-    line-height: 1.8;
-    color: var(--muted);
-    font-weight: 300;
-  }
-
-  /* ── ABOUT ── */
   #about { padding-top: 120px; }
-
-  .about-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5rem;
-    align-items: start;
-  }
-
+  .about-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: start; }
   .about-values { margin-top: 2.5rem; }
-
-  .value-item {
-    display: flex;
-    gap: 1.25rem;
-    align-items: flex-start;
-    padding: 1.5rem 0;
-    border-bottom: 1px solid var(--border);
-  }
-
+  .value-item { display: flex; gap: 1.25rem; align-items: flex-start; padding: 1.5rem 0; border-bottom: 1px solid var(--border); }
   .value-item:first-child { border-top: 1px solid var(--border); }
+  .value-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--accent-light); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+  .value-item h4 { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem; color: var(--text); }
+  .value-item p { font-size: 0.83rem; line-height: 1.75; color: var(--muted); font-weight: 300; }
 
-  .value-icon {
-    width: 36px; height: 36px;
-    border-radius: 8px;
-    background: var(--accent-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-
-  .value-item h4 {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin-bottom: 0.3rem;
-    color: var(--text);
-  }
-
-  .value-item p {
-    font-size: 0.83rem;
-    line-height: 1.75;
-    color: var(--muted);
-    font-weight: 300;
-  }
-
-  /* Info card */
-  .about-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: var(--shadow-lg);
-    position: sticky;
-    top: 90px;
-  }
-
-  .about-card-header {
-    background: var(--accent);
-    padding: 1.75rem 2rem;
-  }
-
-  .about-card-header h3 {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #fff;
-    margin-bottom: 0.4rem;
-  }
-
-  .about-card-header p {
-    font-size: 0.82rem;
-    color: rgba(255,255,255,0.75);
-    font-weight: 300;
-  }
-
+  .about-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg); position: sticky; top: 90px; }
+  .about-card-header { background: var(--accent); padding: 1.75rem 2rem; }
+  .about-card-header h3 { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; }
+  .about-card-header p { font-size: 0.82rem; color: rgba(255,255,255,0.75); font-weight: 300; }
   .about-card-body { padding: 1.5rem 2rem; }
-
-  .info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.9rem 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.85rem;
-  }
-
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
   .info-row:last-child { border-bottom: none; }
-
   .info-row .label { color: var(--muted); font-weight: 300; }
   .info-row .value { font-weight: 600; color: var(--text); font-family: 'Syne', sans-serif; }
-  .info-row .value.green { color: #16a34a; }
 
-  /* ── CONTACT ── */
   #contact { padding-top: 120px; }
-
-  .contact-layout {
-    display: grid;
-    grid-template-columns: 1fr 1.5fr;
-    gap: 4rem;
-    align-items: start;
-  }
-
+  .contact-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 4rem; align-items: start; }
   .contact-info { padding-top: 0.5rem; }
-
-  .contact-item {
-    display: flex;
-    gap: 1rem;
-    padding: 1.4rem 0;
-    border-bottom: 1px solid var(--border);
-  }
-
+  .contact-item { display: flex; gap: 1rem; padding: 1.4rem 0; border-bottom: 1px solid var(--border); }
   .contact-item:first-of-type { border-top: 1px solid var(--border); }
-
-  .contact-icon-wrap {
-    width: 40px; height: 40px;
-    border-radius: 10px;
-    background: var(--accent-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    flex-shrink: 0;
-  }
-
-  .contact-item h4 {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin-bottom: 0.25rem;
-  }
-
-  .contact-item p, .contact-item a {
-    font-size: 0.88rem;
-    color: var(--text);
-    text-decoration: none;
-    font-weight: 400;
-    line-height: 1.5;
-  }
-
+  .contact-icon-wrap { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-light); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+  .contact-item h4 { font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.25rem; }
+  .contact-item p, .contact-item a { font-size: 0.88rem; color: var(--text); text-decoration: none; font-weight: 400; line-height: 1.5; }
   .contact-item a:hover { color: var(--accent); }
 
-  /* Form */
-  .form-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 2.5rem;
-    box-shadow: var(--shadow);
-  }
-
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2.5rem; box-shadow: var(--shadow); }
   .contact-form { display: flex; flex-direction: column; gap: 1.1rem; }
-
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-
   .field { display: flex; flex-direction: column; gap: 0.4rem; }
-
-  .field label {
-    font-size: 0.78rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    color: var(--text);
+  .field label { font-size: 0.78rem; font-weight: 500; letter-spacing: 0.04em; color: var(--text); }
+  .field input, .field select, .field textarea {
+    background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 0.8rem 1rem; font-family: 'DM Sans', sans-serif; font-size: 0.88rem;
+    color: var(--text); outline: none; transition: border-color 0.2s, box-shadow 0.2s; resize: none;
   }
-
-  .field input,
-  .field select,
-  .field textarea {
-    background: var(--bg);
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    padding: 0.8rem 1rem;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    resize: none;
-  }
-
-  .field input::placeholder,
-  .field textarea::placeholder { color: #aab0ba; }
-
-  .field input:focus,
-  .field select:focus,
-  .field textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(26,110,245,0.1);
-    background: var(--surface);
-  }
-
+  .field input::placeholder, .field textarea::placeholder { color: #aab0ba; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,110,245,0.1); background: var(--surface); }
   .field select { appearance: none; cursor: pointer; }
-  .field select option { background: var(--surface); }
-
   .submit-btn {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    padding: 0.9rem 2rem;
-    border-radius: 8px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.25s;
-    box-shadow: 0 4px 16px rgba(26,110,245,0.3);
-    width: 100%;
-    margin-top: 0.5rem;
+    background: var(--accent); color: #fff; border: none;
+    padding: 0.9rem 2rem; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; transition: all 0.25s;
+    box-shadow: 0 4px 16px rgba(26,110,245,0.3); width: 100%; margin-top: 0.5rem;
   }
-
-  .submit-btn:hover {
-    background: var(--accent2);
-    box-shadow: 0 6px 24px rgba(26,110,245,0.4);
-    transform: translateY(-1px);
-  }
+  .submit-btn:hover { background: var(--accent2); box-shadow: 0 6px 24px rgba(26,110,245,0.4); transform: translateY(-1px); }
 
   /* ── FOOTER ── */
   footer {
     border-top: 1px solid var(--border);
-    padding: 2rem 4rem;
+    padding: 0 4rem;
     max-width: 1200px;
     margin: 0 auto;
+  }
+
+  .footer-main {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 1.75rem 0;
     font-size: 0.8rem;
     color: var(--muted);
   }
 
-  /* ── RESPONSIVE ── */
+  .footer-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+  }
+
+  .footer-bottom {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem 0;
+  }
+
+  .portal-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.35rem 0.9rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: all 0.2s;
+    box-shadow: var(--shadow);
+    letter-spacing: 0.02em;
+  }
+  .portal-link:hover {
+    color: var(--accent);
+    border-color: rgba(26,110,245,0.3);
+    box-shadow: 0 4px 16px rgba(26,110,245,0.1);
+    transform: translateY(-1px);
+  }
+  .portal-link-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+  .portal-link:hover .portal-link-dot { opacity: 1; }
+
   @media (max-width: 900px) {
     header { padding: 0 1.5rem; }
     nav { display: none; }
     .hamburger { display: flex; }
-
     section { padding: 100px 1.5rem 60px; }
-
     .services-grid { grid-template-columns: 1fr 1fr; }
     .about-layout { grid-template-columns: 1fr; gap: 2.5rem; }
     .about-card { position: static; }
     .contact-layout { grid-template-columns: 1fr; gap: 2.5rem; }
     .form-row { grid-template-columns: 1fr; }
-    footer { flex-direction: column; gap: 0.5rem; text-align: center; padding: 2rem 1.5rem; }
+    footer { padding: 0 1.5rem; }
+    .footer-main { flex-direction: column; gap: 0.4rem; text-align: center; }
   }
-
   @media (max-width: 580px) {
     .services-grid { grid-template-columns: 1fr; }
     h1 { font-size: 2.2rem; }
@@ -668,14 +367,12 @@
 </head>
 <body>
 
-<!-- Background -->
 <div class="bg-shapes">
   <div class="shape shape1"></div>
   <div class="shape shape2"></div>
   <div class="shape shape3"></div>
 </div>
 
-<!-- Header -->
 <header>
   <a href="#home" class="logo">ADZ<span>Solutions</span></a>
   <nav>
@@ -689,7 +386,6 @@
   </button>
 </header>
 
-<!-- Mobile Nav -->
 <div class="mobile-nav" id="mobileNav">
   <a href="#home" onclick="closeMenu(); setMobileActive(this)">Home</a>
   <a href="#services" onclick="closeMenu(); setMobileActive(this)">Services</a>
@@ -697,18 +393,11 @@
   <a href="#contact" onclick="closeMenu(); setMobileActive(this)">Contact</a>
 </div>
 
-<!-- Home -->
 <section id="home">
   <div class="home-content">
     <p class="eyebrow">IT Consulting &amp; Solutions</p>
-    <h1>
-      Technology<br>
-      that <span class="accent-word">works</span><br>
-      for you.
-    </h1>
-    <p class="home-desc">
-      We help small and mid-size businesses design, deploy, and maintain the IT infrastructure they need to operate with confidence — without the enterprise price tag.
-    </p>
+    <h1>Technology<br>that <span class="accent-word">works</span><br>for you.</h1>
+    <p class="home-desc">We help small and mid-size businesses design, deploy, and maintain the IT infrastructure they need to operate with confidence — without the enterprise price tag.</p>
     <div class="btn-group">
       <a href="#services" class="btn btn-primary">Our Services →</a>
       <a href="#contact" class="btn btn-outline">Get in Touch</a>
@@ -716,79 +405,41 @@
   </div>
 </section>
 
-<!-- Services -->
 <section id="services">
   <p class="section-tag">What We Do</p>
   <h2>End-to-end IT<br>expertise</h2>
   <p class="section-intro">From day-to-day helpdesk support to full infrastructure overhauls, we deliver practical solutions tailored to your business needs.</p>
-
   <div class="services-grid">
-    <div class="service-card">
-      <div class="service-icon-wrap"></div>
-      <h3>IT Consulting</h3>
-      <p></p>
-    </div>
-    <div class="service-card">
-      <div class="service-icon-wrap"></div>
-      <h3>Web Development</h3>
-      <p></p>
-    </div>
-    <div class="service-card">
-      <div class="service-icon-wrap"></div>
-      <h3>Marketing</h3>
-      <p></p>
-    </div>
-    <div class="service-card">
-      <div class="service-icon-wrap"></div>
-      <h3>Project Management</h3>
-      <p></p>
-    </div>
-    <div class="service-card">
-      <div class="service-icon-wrap"></div>
-      <h3>Systems Integration</h3>
-      <p></p>
-    </div>
-    <div class="service-card">
-      <div class="service-icon-wrap"></div>
-      <h3>Business Process Improvement</h3>
-      <p></p>
-    </div>
+    <div class="service-card"><div class="service-icon-wrap">🖥️</div><h3>IT Consulting</h3><p>Strategic technology guidance tailored to your business goals and budget.</p></div>
+    <div class="service-card"><div class="service-icon-wrap">🌐</div><h3>Web Development</h3><p>Custom websites and web applications built for performance and growth.</p></div>
+    <div class="service-card"><div class="service-icon-wrap">📣</div><h3>Marketing</h3><p>Digital marketing strategies that drive visibility and measurable results.</p></div>
+    <div class="service-card"><div class="service-icon-wrap">📋</div><h3>Project Management</h3><p>End-to-end project oversight keeping your initiatives on time and on budget.</p></div>
+    <div class="service-card"><div class="service-icon-wrap">🔗</div><h3>Systems Integration</h3><p>Connecting your tools and platforms into one seamless, efficient workflow.</p></div>
+    <div class="service-card"><div class="service-icon-wrap">⚙️</div><h3>Business Process Improvement</h3><p>Identifying inefficiencies and implementing smarter ways to operate.</p></div>
   </div>
 </section>
 
-<!-- About -->
 <section id="about">
   <div class="about-layout">
     <div>
       <p class="section-tag">Who We Are</p>
       <h2>Built on trust,<br>driven by results</h2>
       <p class="section-intro">ADZ Solutions was founded with a simple belief: every business deserves reliable, honest IT support — not just the ones with Fortune 500 budgets.</p>
-
       <div class="about-values">
         <div class="value-item">
           <div class="value-icon">💬</div>
-          <div>
-            <h4>Transparency First</h4>
-            <p>We explain what we're doing and why. No jargon, no hidden fees, no upselling you on what you don't need.</p>
-          </div>
+          <div><h4>Transparency First</h4><p>We explain what we're doing and why. No jargon, no hidden fees, no upselling you on what you don't need.</p></div>
         </div>
         <div class="value-item">
           <div class="value-icon">🛡️</div>
-          <div>
-            <h4>Proactive Over Reactive</h4>
-            <p>We prevent problems before they happen — not just show up when things break.</p>
-          </div>
+          <div><h4>Proactive Over Reactive</h4><p>We prevent problems before they happen — not just show up when things break.</p></div>
         </div>
         <div class="value-item">
           <div class="value-icon">🤝</div>
-          <div>
-            <h4>Long-Term Partnership</h4>
-            <p>We grow with your business and stay invested in your success well beyond the initial engagement.</p>
-          </div>
+          <div><h4>Long-Term Partnership</h4><p>We grow with your business and stay invested in your success well beyond the initial engagement.</p></div>
         </div>
       </div>
     </div>
-
     <div>
       <div class="about-card">
         <div class="about-card-header">
@@ -796,81 +447,33 @@
           <p>Your local IT partner in Marlton, NJ</p>
         </div>
         <div class="about-card-body">
-          <div class="info-row">
-            <span class="label">Location</span>
-            <span class="value">Marlton, NJ</span>
-          </div>
-          <div class="info-row">
-            <span class="label">Support Hours</span>
-            <span class="value">Mon–Fri, 8am–6pm</span>
-          </div>
+          <div class="info-row"><span class="label">Location</span><span class="value">Marlton, NJ</span></div>
+          <div class="info-row"><span class="label">Support Hours</span><span class="value">Mon–Fri, 8am–6pm</span></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Contact -->
 <section id="contact">
   <p class="section-tag">Get In Touch</p>
   <h2>Let's talk about<br>your IT needs</h2>
-
   <div class="contact-layout">
     <div class="contact-info">
-      <div class="contact-item">
-        <div class="contact-icon-wrap">📍</div>
-        <div>
-          <h4>Office</h4>
-          <p>23 Milford Dr<br>Marlton, NJ 08053</p>
-        </div>
-      </div>
-      <div class="contact-item">
-        <div class="contact-icon-wrap">📞</div>
-        <div>
-          <h4>Phone</h4>
-          <a href="tel:+18567191356">(856) 719-1356</a>
-        </div>
-      </div>
-      <div class="contact-item">
-        <div class="contact-icon-wrap">✉️</div>
-        <div>
-          <h4>Email</h4>
-          <a href="#">daanyalkaleem@adzsolutionsgroup.com</a>
-        </div>
-      </div>
-      <div class="contact-item">
-        <div class="contact-icon-wrap">🕐</div>
-        <div>
-          <h4>Hours</h4>
-          <p>Mon–Fri: 8am – 6pm</p>
-        </div>
-      </div>
+      <div class="contact-item"><div class="contact-icon-wrap">📍</div><div><h4>Office</h4><p>23 Milford Dr<br>Marlton, NJ 08053</p></div></div>
+      <div class="contact-item"><div class="contact-icon-wrap">📞</div><div><h4>Phone</h4><a href="tel:+18567191356">(856) 719-1356</a></div></div>
+      <div class="contact-item"><div class="contact-icon-wrap">✉️</div><div><h4>Email</h4><a href="mailto:daanyalkaleem@adzsolutionsgroup.com">daanyalkaleem@adzsolutionsgroup.com</a></div></div>
+      <div class="contact-item"><div class="contact-icon-wrap">🕐</div><div><h4>Hours</h4><p>Mon–Fri: 8am – 6pm</p></div></div>
     </div>
-
     <div class="form-card">
       <form class="contact-form" action="https://formspree.io/f/mkopwoyl" method="POST">
         <div class="form-row">
-          <div class="field">
-            <label>First Name</label>
-            <input type="text" name="first-name" placeholder="Jane" required>
-          </div>
-          <div class="field">
-            <label>Last Name</label>
-            <input type="text" name="last-name" placeholder="Smith">
-          </div>
+          <div class="field"><label>First Name</label><input type="text" name="first-name" placeholder="Jane" required></div>
+          <div class="field"><label>Last Name</label><input type="text" name="last-name" placeholder="Smith"></div>
         </div>
-        <div class="field">
-          <label>Email</label>
-          <input type="email" name="email" placeholder="jane@company.com" required>
-        </div>
-        <div class="field">
-          <label>Company</label>
-          <input type="text" name="company" placeholder="Your Business">
-        </div>
-        <div class="field">
-          <label>Message</label>
-          <textarea rows="4" name="message" placeholder="Tell us about your IT needs..."></textarea>
-        </div>
+        <div class="field"><label>Email</label><input type="email" name="email" placeholder="jane@company.com" required></div>
+        <div class="field"><label>Company</label><input type="text" name="company" placeholder="Your Business"></div>
+        <div class="field"><label>Message</label><textarea rows="4" name="message" placeholder="Tell us about your IT needs..."></textarea></div>
         <button type="submit" class="submit-btn">Send Message →</button>
       </form>
     </div>
@@ -878,30 +481,32 @@
 </section>
 
 <footer>
-  <span>© 2026 ADZ Solutions LLC. All rights reserved.</span>
-  <span>Marlton, NJ · (856) 719-1356</span>
+  <div class="footer-main">
+    <span>© 2026 ADZ Solutions LLC. All rights reserved.</span>
+    <span>Marlton, NJ · (856) 719-1356</span>
+  </div>
+  <hr class="footer-divider">
+  <div class="footer-bottom">
+    <a href="/tracker/login.html" class="portal-link">
+      <span class="portal-link-dot"></span>
+      Employee Portal
+    </a>
+  </div>
 </footer>
 
 <script>
-  // Desktop nav active on click
   function setActive(el) {
     document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
     el.classList.add('active');
   }
-
-  // Mobile nav
   function toggleMenu() {
-    const menu = document.getElementById('mobileNav');
-    const btn = document.getElementById('hamburger');
-    menu.classList.toggle('open');
-    btn.classList.toggle('open');
+    document.getElementById('mobileNav').classList.toggle('open');
+    document.getElementById('hamburger').classList.toggle('open');
   }
-
   function closeMenu() {
     document.getElementById('mobileNav').classList.remove('open');
     document.getElementById('hamburger').classList.remove('open');
   }
-
   function setMobileActive(el) {
     document.querySelectorAll('.mobile-nav a').forEach(a => a.classList.remove('active'));
     el.classList.add('active');
@@ -910,22 +515,16 @@
       a.classList.toggle('active', a.getAttribute('href') === href);
     });
   }
-
-  // Scroll-based active nav
   const sections = document.querySelectorAll('section');
   const navLinks = document.querySelectorAll('nav a');
-
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const id = entry.target.id;
-        navLinks.forEach(a => {
-          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
-        });
+        navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
       }
     });
   }, { threshold: 0.4 });
-
   sections.forEach(s => observer.observe(s));
 </script>
 </body>
