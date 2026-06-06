@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bid Tracker — ADZ Solutions</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root {
+    --bg: #f5f7fa; --surface: #ffffff; --surface2: #eef1f6;
+    --accent: #1a6ef5; --accent-light: #e8f0fe; --accent2: #0d47a1;
+    --text: #0f1923; --muted: #5c6b7a;
+    --border: rgba(26,110,245,0.12);
+    --shadow: 0 4px 24px rgba(15,25,35,0.08);
+    --shadow-lg: 0 12px 48px rgba(15,25,35,0.12);
+    --green: #16a34a; --green-bg: #dcfce7;
+    --amber: #b45309; --amber-bg: #fef3c7;
+    --red: #dc2626; --red-bg: #fee2e2;
+    --purple: #7c3aed; --purple-bg: #ede9fe;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+  .bg-shapes { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .shape { position: absolute; border-radius: 50%; filter: blur(80px); }
+  .shape1 { width: 600px; height: 600px; top: -200px; right: -150px; background: rgba(26,110,245,0.08); }
+  .shape2 { width: 500px; height: 500px; bottom: -100px; left: -100px; background: rgba(26,110,245,0.05); }
+
+  /* ── HEADER ── */
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 4rem; height: 68px;
+    background: rgba(245,247,250,0.92); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 12px rgba(15,25,35,0.06);
+  }
+  .logo { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text); text-decoration: none; }
+  .logo span { color: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 1rem; }
+  .user-pill {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 0.3rem 0.9rem 0.3rem 0.4rem;
+    font-size: 0.8rem; color: var(--muted);
+    box-shadow: var(--shadow);
+  }
+  .user-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent-light); overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 600; color: var(--accent);
+  }
+  .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* ── TABS ── */
+  .tabs-bar {
+    position: fixed; top: 68px; left: 0; right: 0; z-index: 90;
+    display: flex; padding: 0 4rem;
+    background: rgba(245,247,250,0.95); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 0 1.25rem; height: 46px;
+    display: flex; align-items: center;
+    font-size: 0.85rem; font-weight: 500; color: var(--muted);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s; white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    padding: 0.6rem 1.3rem; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500;
+    text-decoration: none; transition: all 0.25s; cursor: pointer; border: none;
+  }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 16px rgba(26,110,245,0.3); }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: rgba(26,110,245,0.3); }
+  .btn-danger { background: var(--red-bg); color: var(--red); border: none; }
+  .btn-danger:hover { background: #fecaca; }
+  .btn-sm { padding: 0.4rem 0.85rem; font-size: 0.78rem; }
+  .btn-signout { background: transparent; color: var(--muted); border: 1.5px solid var(--border); font-size: 0.78rem; padding: 0.35rem 0.85rem; }
+  .btn-signout:hover { color: var(--red); border-color: rgba(220,38,38,0.3); }
+
+  /* ── MAIN ── */
+  main { padding: 136px 4rem 80px; max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .section-tag {
+    font-size: 0.75rem; font-weight: 500; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .section-tag::before { content: ''; width: 16px; height: 2px; background: var(--accent); border-radius: 2px; }
+
+  /* ── STATS ── */
+  .stats-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 1rem; margin-bottom: 1.75rem; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.3rem 1.4rem;
+    box-shadow: var(--shadow); position: relative; overflow: hidden; transition: all 0.25s;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+    background: linear-gradient(90deg, var(--accent), #64b4ff);
+    border-radius: 3px 3px 0 0;
+  }
+  .stat-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  .stat-card.green::before { background: linear-gradient(90deg,var(--green),#4ade80); }
+  .stat-card.amber::before { background: linear-gradient(90deg,var(--amber),#fbbf24); }
+  .stat-card.purple::before { background: linear-gradient(90deg,var(--purple),#a78bfa); }
+  .stat-label { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.45rem; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 1.9rem; font-weight: 800; color: var(--text); line-height: 1; letter-spacing: -0.03em; }
+  .stat-sub { font-size: 0.7rem; color: var(--muted); margin-top: 3px; font-weight: 300; }
+
+  /* ── TOOLBAR ── */
+  .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+  .toolbar-left { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+  .filter-input {
+    padding: 0.58rem 1rem; border: 1.5px solid var(--border);
+    border-radius: 8px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; background: var(--surface); color: var(--text);
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s; width: 250px;
+  }
+  .filter-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,110,245,0.1); }
+  .filter-select {
+    padding: 0.58rem 2rem 0.58rem 1rem; border: 1.5px solid var(--border);
+    border-radius: 8px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; background: var(--surface); color: var(--text);
+    outline: none; cursor: pointer; transition: border-color 0.2s; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235c6b7a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  .filter-select:focus { border-color: var(--accent); }
+
+  /* ── TABLE ── */
+  .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  thead { background: var(--text); }
+  th { padding: 11px 16px; text-align: left; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+  tbody tr { border-bottom: 1px solid var(--surface2); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #fafbfd; }
+  td { padding: 12px 16px; color: var(--text); vertical-align: middle; }
+  .td-title { font-weight: 500; }
+  .td-title a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .td-title a:hover { text-decoration: underline; }
+  .td-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; font-weight: 300; }
+  .td-muted { font-size: 0.82rem; color: var(--muted); font-weight: 300; }
+  .deadline-soon { color: var(--amber); font-weight: 600; }
+  .deadline-past { color: var(--red); text-decoration: line-through; opacity: 0.7; }
+  .cat-chip { background: var(--surface2); color: var(--muted); font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+  .actions-cell { display: flex; gap: 6px; }
+
+  /* ── STATUS BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 0.7rem; font-weight: 500; letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .badge-new { background: var(--accent-light); color: var(--accent); }
+  .badge-reviewing { background: var(--purple-bg); color: var(--purple); }
+  .badge-submitted { background: var(--amber-bg); color: var(--amber); }
+  .badge-won { background: var(--green-bg); color: var(--green); }
+  .badge-lost { background: var(--red-bg); color: var(--red); }
+  .badge-passed { background: var(--surface2); color: var(--muted); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { padding: 60px 20px; text-align: center; }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+  .empty-state h3 { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; }
+  .empty-state p { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; font-weight: 300; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 300;
+    background: var(--text); color: #fff;
+    padding: 0.75rem 1.25rem; border-radius: 10px;
+    font-size: 0.85rem; box-shadow: var(--shadow-lg);
+    transform: translateY(20px); opacity: 0;
+    transition: all 0.3s; pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--green); }
+  .toast.error { background: var(--red); }
+
+  /* ── MODAL ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,25,35,0.5); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(15,25,35,0.25); border: 1px solid var(--border); }
+  .modal-header { padding: 1.75rem 2rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-tag { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .modal-tag::before { content: ''; width: 12px; height: 2px; background: var(--accent); border-radius: 2px; }
+  .modal-title { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--text); }
+  .modal-close { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--bg); color: var(--muted); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .modal-close:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-body { padding: 1.75rem 2rem; }
+  .modal-footer { padding: 1.25rem 2rem 1.75rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--border); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-group label { font-size: 0.75rem; font-weight: 500; letter-spacing: 0.04em; color: var(--text); }
+  .form-group input, .form-group select, .form-group textarea { padding: 0.72rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--text); outline: none; background: var(--bg); resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; }
+  .form-group input::placeholder, .form-group textarea::placeholder { color: #aab0ba; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,110,245,0.1); background: var(--surface); }
+  .form-group textarea { min-height: 80px; }
+  .form-group select { appearance: none; cursor: pointer; }
+
+  /* ── DIRECTORY ── */
+  .dir-hero { background: var(--text); border-radius: 16px; padding: 2rem 2.5rem; margin-bottom: 1.75rem; display: flex; align-items: center; gap: 1.5rem; box-shadow: var(--shadow-lg); position: relative; overflow: hidden; }
+  .dir-hero::after { content: ''; position: absolute; right: -60px; top: -60px; width: 240px; height: 240px; border-radius: 50%; background: rgba(26,110,245,0.12); }
+  .dir-hero-icon { font-size: 2.5rem; position: relative; z-index: 1; }
+  .dir-hero h2 { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 0.3rem; letter-spacing: -0.02em; position: relative; z-index: 1; }
+  .dir-hero p { font-size: 0.85rem; color: rgba(255,255,255,0.6); font-weight: 300; position: relative; z-index: 1; }
+  .county-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(310px,1fr)); gap: 1rem; }
+  .county-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.4rem 1.5rem; transition: all 0.25s; position: relative; overflow: hidden; }
+  .county-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg,var(--accent),#64b4ff); transform: scaleX(0); transform-origin: left; transition: transform 0.35s; border-radius: 3px 3px 0 0; }
+  .county-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); border-color: rgba(26,110,245,0.2); }
+  .county-card:hover::before { transform: scaleX(1); }
+  .county-name { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 0.85rem; display: flex; align-items: center; justify-content: space-between; }
+  .county-link { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--accent); text-decoration: none; font-weight: 500; padding: 0.5rem 0.85rem; border-radius: 8px; background: var(--accent-light); transition: background 0.2s; margin-bottom: 0.6rem; }
+  .county-link:hover { background: #d0e3fd; }
+  .county-note { font-size: 0.75rem; color: var(--muted); padding: 0.5rem 0.75rem; border-radius: 6px; background: var(--bg); border-left: 2px solid var(--accent); font-weight: 300; line-height: 1.6; }
+  .active-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--green); background: var(--green-bg); padding: 2px 7px; border-radius: 10px; }
+
+  /* ── LOADING SCREEN ── */
+  .loading-screen { position: fixed; inset: 0; background: var(--bg); z-index: 400; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-screen p { font-size: 0.85rem; color: var(--muted); }
+
+  /* ── FOOTER ── */
+  .page-footer { border-top: 1px solid var(--border); padding: 1.25rem 4rem; max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: var(--muted); position: relative; z-index: 1; }
+  .page-footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 900px) {
+    header { padding: 0 1.5rem; }
+    .tabs-bar { padding: 0 1.5rem; overflow-x: auto; }
+    main { padding: 126px 1.5rem 60px; }
+    .stats-row { grid-template-columns: repeat(2,1fr); }
+    .page-footer { padding: 1.25rem 1.5rem; flex-direction: column; gap: 0.4rem; text-align: center; }
+  }
+  @media (max-width: 600px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .filter-input { width: 100%; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-shapes"><div class="shape shape1"></div><div class="shape shape2"></div></div>
+
+<!-- Auth loading screen -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <p>Loading portal...</p>
+</div>
+
+<header>
+  <a href="/" class="logo">ADZ<span>Solutions</span></a>
+  <div class="header-right">
+    <div class="user-pill" id="userPill">
+      <div class="user-avatar" id="userAvatar"></div>
+      <span id="userEmail"></span>
+    </div>
+    <button class="btn btn-sm btn-ghost btn-signout" onclick="signOut()">Sign Out</button>
+    <button class="btn btn-sm btn-ghost" onclick="exportCSV()">⬇ Export</button>
+    <button class="btn btn-sm btn-primary" onclick="openModal()">+ Add Bid</button>
+  </div>
+</header>
+
+<div class="tabs-bar">
+  <div class="tab active" onclick="switchTab('tracker',this)">Bid Tracker</div>
+  <div class="tab" onclick="switchTab('directory',this)">County Directory</div>
+</div>
+
+<main>
+  <!-- TRACKER -->
+  <div id="tracker" class="section active">
+    <p class="section-tag">SBE Procurement</p>
+    <div class="stats-row" id="statsRow"></div>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <input class="filter-input" id="searchInput" type="text" placeholder="🔍  Search bids, counties, contacts..." oninput="renderTable()">
+        <select class="filter-select" id="filterCounty" onchange="renderTable()"><option value="">All Counties</option></select>
+        <select class="filter-select" id="filterStatus" onchange="renderTable()">
+          <option value="">All Statuses</option>
+          <option value="new">New</option><option value="reviewing">Reviewing</option>
+          <option value="submitted">Submitted</option><option value="won">Won</option>
+          <option value="lost">Lost</option><option value="passed">Passed</option>
+        </select>
+        <select class="filter-select" id="filterCat" onchange="renderTable()">
+          <option value="">All Categories</option>
+          <option>IT Services</option><option>Healthcare</option><option>Consulting</option>
+          <option>Marketing</option><option>Web Development</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Bid / RFP</th><th>County</th><th>Category</th>
+            <th>Deadline</th><th>Est. Value</th><th>Assigned</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="bidTableBody"></tbody>
+      </table>
+      <div id="emptyState" class="empty-state" style="display:none;">
+        <div class="empty-icon">📋</div>
+        <h3>No bids tracked yet</h3>
+        <p>Add your first bid opportunity to start building your pipeline.</p>
+        <button class="btn btn-primary" onclick="openModal()">+ Add First Bid</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECTORY -->
+  <div id="directory" class="section">
+    <div class="dir-hero">
+      <div class="dir-hero-icon">🗂️</div>
+      <div>
+        <h2>NJ County Bid Portals</h2>
+        <p>Direct links to all 21 New Jersey county purchasing portals with live opportunity notes.</p>
+      </div>
+    </div>
+    <div class="county-grid" id="countyGrid"></div>
+  </div>
+</main>
+
+<div class="page-footer">
+  <span>© 2026 ADZ Solutions LLC · Employee Portal</span>
+  <a href="/">← Back to main site</a>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-tag">SBE Bid Tracker</div>
+        <div class="modal-title" id="modalTitle">Add New Bid</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Bid / RFP Title *</label><input type="text" id="fTitle" placeholder="e.g. IT Consulting and Management Services"></div>
+        <div class="form-group">
+          <label>County *</label>
+          <select id="fCounty">
+            <option value="">Select county...</option>
+            <option>Atlantic</option><option>Bergen</option><option>Burlington</option><option>Camden</option>
+            <option>Cape May</option><option>Cumberland</option><option>Essex</option><option>Gloucester</option>
+            <option>Hudson</option><option>Hunterdon</option><option>Mercer</option><option>Middlesex</option>
+            <option>Monmouth</option><option>Morris</option><option>Ocean</option><option>Passaic</option>
+            <option>Salem</option><option>Somerset</option><option>Sussex</option><option>Union</option><option>Warren</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="fCategory">
+            <option value="">Select...</option>
+            <option>IT Services</option><option>Healthcare</option><option>Consulting</option>
+            <option>Marketing</option><option>Web Development</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Bid / RFP Number</label><input type="text" id="fBidNum" placeholder="e.g. RFP-26-005"></div>
+        <div class="form-group"><label>Submission Deadline</label><input type="date" id="fDeadline"></div>
+        <div class="form-group"><label>Estimated Value ($)</label><input type="text" id="fValue" placeholder="e.g. 150,000"></div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="fStatus">
+            <option value="new">New</option><option value="reviewing">Reviewing</option>
+            <option value="submitted">Submitted</option><option value="won">Won</option>
+            <option value="lost">Lost</option><option value="passed">Passed</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Assigned To</label><input type="text" id="fAssigned" placeholder="Team member name"></div>
+        <div class="form-group full"><label>Contact Name & Info</label><input type="text" id="fContact" placeholder="e.g. Jane Smith — jane@county.gov — (609) 555-0123"></div>
+        <div class="form-group full"><label>Portal / Bid Link</label><input type="url" id="fLink" placeholder="https://..."></div>
+        <div class="form-group full"><label>Notes</label><textarea id="fNotes" placeholder="Requirements, SBE provisions, key details..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveBid()">Save Bid</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="tracker.js"></script>
+<script>
+  // ── AUTH CHECK ──
+  const userData = sessionStorage.getItem('adz_user');
+  if (!userData) {
+    window.location.href = '/tracker/login.html';
+  } else {
+    const user = JSON.parse(userData);
+    // Check token expiry
+    if (user.exp && Date.now() / 1000 > user.exp) {
+      sessionStorage.removeItem('adz_user');
+      window.location.href = '/tracker/login.html';
+    } else {
+      // Render user info
+      document.getElementById('userEmail').textContent = user.name || user.email;
+      const avatar = document.getElementById('userAvatar');
+      if (user.picture) {
+        avatar.innerHTML = `<img src="${user.picture}" alt="avatar">`;
+      } else {
+        avatar.textContent = (user.name || user.email).charAt(0).toUpperCase();
+      }
+      // Hide loading screen and init app
+      document.getElementById('loadingScreen').style.display = 'none';
+      initApp();
+    }
+  }
+
+  function signOut() {
+    if (!confirm('Sign out of the Employee Portal?')) return;
+    sessionStorage.removeItem('adz_user');
+    window.location.href = '/tracker/login.html';
+  }
+</script>
+</body>
+</html>
