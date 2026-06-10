@@ -5,7 +5,7 @@
 // ============================================================
 
 // ── REPLACE THIS with your deployed Apps Script Web App URL ──
-const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/adzsolutionsgroup.com/s/AKfycbxQ7GYuUVoZC7eZFVMiEnX-X4fV4gQY0_SFK9pXDSzfHBjFhjgzB6z9MyVYhK1IU68Yug/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/adzsolutionsgroup.com/s/AKfycby75UGllMsf9ix5cXmwcBEeKd_lKuWpCiUCg_25pVUhe91xkJn0jQiC8lLrZptcxbWKyA/exec';
 
 // ── STATE ──
 let bids = [];
