@@ -54,9 +54,10 @@ async function apiCall(action, payload = {}) {
   const body = { action, credential: getCredential(), ...payload };
   const res = await fetch(APPS_SCRIPT_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body),
+    redirect: 'follow'
+});
   const data = await res.json();
   if (data.error) throw new Error(data.error);
   return data;
