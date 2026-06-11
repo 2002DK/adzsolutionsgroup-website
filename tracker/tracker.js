@@ -5,7 +5,7 @@
 // ============================================================
 
 // ── REPLACE THIS with your deployed Apps Script Web App URL ──
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFc907iWGvJz4nGrgSM4fZSUi0rcveTGgS3VM6Bfn9kNmGLBvJia1DwkKaFR-kqU344w/exec';
+const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
 
 // ── STATE ──
 let bids = [];
