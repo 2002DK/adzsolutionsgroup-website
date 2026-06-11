@@ -384,7 +384,77 @@
   .portal-link-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); opacity: 0.5; transition: opacity 0.2s; }
   .portal-link:hover .portal-link-dot { opacity: 1; }
 
-  /* ── REDUCED MOTION ── */
+  /* ── LOADING SCREEN ── */
+  #loadingScreen {
+    position: fixed; inset: 0; z-index: 1000;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+  }
+  #loadingScreen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .loader-content { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+  .loader-logo {
+    height: 60px; width: auto;
+    animation: loaderPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes loaderPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.6; transform: scale(0.97); }
+  }
+  .loader-bar {
+    width: 160px; height: 3px;
+    background: var(--border); border-radius: 3px; overflow: hidden;
+  }
+  .loader-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent), #64b4ff);
+    border-radius: 3px;
+    animation: loaderFill 1.4s ease forwards;
+  }
+  @keyframes loaderFill { to { width: 100%; } }
+
+  /* ── SCROLL PROGRESS BAR ── */
+  #scrollProgress {
+    position: fixed; top: 0; left: 0; z-index: 200;
+    height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--accent), #64b4ff);
+    transition: width 0.1s linear;
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* ── CURSOR GLOW ── */
+  #cursorGlow {
+    position: fixed; z-index: 9999;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(26,110,245,0.35) 0%, transparent 70%);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: transform 0.08s ease, opacity 0.3s ease, width 0.2s ease, height 0.2s ease;
+    opacity: 0;
+  }
+  body:hover #cursorGlow { opacity: 1; }
+
+  /* ── TYPED CURSOR ── */
+  .typed-cursor {
+    display: inline-block;
+    color: var(--accent);
+    font-weight: 300;
+    animation: blink 0.75s step-end infinite;
+    margin-left: 1px;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* ── SECTION DIVIDER ── */
+  .section-divider {
+    width: 100%; overflow: hidden;
+    line-height: 0; padding: 0 0 8px;
+  }
+  .section-divider svg {
+    width: 100%; height: 24px; display: block;
+  }
+
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     .reveal { opacity: 1; transform: none; }
@@ -416,6 +486,20 @@
 </style>
 </head>
 <body>
+
+<!-- LOADING SCREEN -->
+<div id="loadingScreen">
+  <div class="loader-content">
+    <img src="/assets/logo.png" alt="ADZ Solutions" class="loader-logo">
+    <div class="loader-bar"><div class="loader-fill"></div></div>
+  </div>
+</div>
+
+<!-- SCROLL PROGRESS BAR -->
+<div id="scrollProgress"></div>
+
+<!-- CURSOR GLOW -->
+<div id="cursorGlow"></div>
 
 <div class="bg-shapes">
   <div class="shape shape1"></div>
@@ -450,7 +534,7 @@
   <canvas id="particleCanvas"></canvas>
   <div class="home-content">
     <p class="eyebrow">ADZ Solutions</p>
-    <h1>Technology<br>that <span class="accent-word">works</span><br>for you.</h1>
+    <h1>Technology<br>that <span class="accent-word"><span id="typedWord">works</span><span class="typed-cursor">|</span></span><br>for you.</h1>
     <p class="home-desc">We help small and mid-size businesses design, deploy, and maintain the IT infrastructure they need to operate with confidence — without the enterprise price tag.</p>
     <div class="btn-group">
       <a href="#services" class="btn btn-primary">Our Services →</a>
@@ -478,6 +562,11 @@
 </section>
 
 <!-- SERVICES -->
+<div class="section-divider" aria-hidden="true">
+  <svg viewBox="0 0 1200 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <polyline points="0,12 50,0 100,12 150,0 200,12 250,0 300,12 350,0 400,12 450,0 500,12 550,0 600,12 650,0 700,12 750,0 800,12 850,0 900,12 950,0 1000,12 1050,0 1100,12 1150,0 1200,12" fill="none" stroke="rgba(26,110,245,0.15)" stroke-width="1.5"/>
+  </svg>
+</div>
 <section id="services">
   <p class="section-tag reveal">What We Do</p>
   <h2 class="reveal reveal-delay-1">End-to-end IT<br>expertise</h2>
@@ -523,6 +612,11 @@
 </section>
 
 <!-- ABOUT -->
+<div class="section-divider" aria-hidden="true">
+  <svg viewBox="0 0 1200 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <polyline points="0,12 50,0 100,12 150,0 200,12 250,0 300,12 350,0 400,12 450,0 500,12 550,0 600,12 650,0 700,12 750,0 800,12 850,0 900,12 950,0 1000,12 1050,0 1100,12 1150,0 1200,12" fill="none" stroke="rgba(26,110,245,0.15)" stroke-width="1.5"/>
+  </svg>
+</div>
 <section id="about">
   <div class="about-layout">
     <div>
@@ -560,6 +654,11 @@
 </section>
 
 <!-- CONTACT -->
+<div class="section-divider" aria-hidden="true">
+  <svg viewBox="0 0 1200 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <polyline points="0,12 50,0 100,12 150,0 200,12 250,0 300,12 350,0 400,12 450,0 500,12 550,0 600,12 650,0 700,12 750,0 800,12 850,0 900,12 950,0 1000,12 1050,0 1100,12 1150,0 1200,12" fill="none" stroke="rgba(26,110,245,0.15)" stroke-width="1.5"/>
+  </svg>
+</div>
 <section id="contact">
   <p class="section-tag reveal">Get In Touch</p>
   <h2 class="reveal reveal-delay-1">Let's talk about<br>your IT needs</h2>
@@ -731,7 +830,77 @@ document.querySelectorAll('.service-card').forEach(card => {
   });
 });
 
-// ── NAV ───────────────────────────────────────────────────────
+// ── LOADING SCREEN ────────────────────────────────────────────
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('loadingScreen').classList.add('hidden');
+  }, 1500);
+});
+
+// ── SCROLL PROGRESS BAR ───────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const doc      = document.documentElement;
+  const scrolled = doc.scrollTop / (doc.scrollHeight - doc.clientHeight);
+  document.getElementById('scrollProgress').style.width = (scrolled * 100) + '%';
+}, { passive: true });
+
+// ── CURSOR GLOW ───────────────────────────────────────────────
+const cursorGlow = document.getElementById('cursorGlow');
+document.addEventListener('mousemove', e => {
+  cursorGlow.style.left = e.clientX + 'px';
+  cursorGlow.style.top  = e.clientY + 'px';
+});
+// Expand glow on clickable elements
+document.querySelectorAll('a, button, .service-card').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursorGlow.style.width  = '48px';
+    cursorGlow.style.height = '48px';
+    cursorGlow.style.background = 'radial-gradient(circle, rgba(26,110,245,0.2) 0%, transparent 70%)';
+  });
+  el.addEventListener('mouseleave', () => {
+    cursorGlow.style.width  = '28px';
+    cursorGlow.style.height = '28px';
+    cursorGlow.style.background = 'radial-gradient(circle, rgba(26,110,245,0.35) 0%, transparent 70%)';
+  });
+});
+// Hide on mobile
+if ('ontouchstart' in window) cursorGlow.style.display = 'none';
+
+// ── TYPED TEXT EFFECT ─────────────────────────────────────────
+const words      = ['works', 'scales', 'delivers', 'grows'];
+const typedEl    = document.getElementById('typedWord');
+let   wordIndex  = 0;
+let   charIndex  = 0;
+let   isDeleting = false;
+const TYPE_SPEED = 110;
+const DEL_SPEED  = 70;
+const PAUSE      = 1800;
+
+function typeLoop() {
+  const current = words[wordIndex];
+
+  if (!isDeleting) {
+    typedEl.textContent = current.slice(0, charIndex + 1);
+    charIndex++;
+    if (charIndex === current.length) {
+      isDeleting = true;
+      setTimeout(typeLoop, PAUSE);
+      return;
+    }
+  } else {
+    typedEl.textContent = current.slice(0, charIndex - 1);
+    charIndex--;
+    if (charIndex === 0) {
+      isDeleting  = false;
+      wordIndex   = (wordIndex + 1) % words.length;
+    }
+  }
+  setTimeout(typeLoop, isDeleting ? DEL_SPEED : TYPE_SPEED);
+}
+
+// Start after loading screen clears and entrance animation finishes
+setTimeout(typeLoop, 2200);
+
 function setActive(el) {
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
   el.classList.add('active');
