@@ -52,9 +52,6 @@ function getCredential() {
 }
 
 async function apiCall(action, payload = {}) {
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
-    throw new Error('Apps Script URL not configured in tracker.js');
-  }
   const body = { action, credential: getCredential(), ...payload };
   const res = await fetch(APPS_SCRIPT_URL, {
     method: 'POST',
