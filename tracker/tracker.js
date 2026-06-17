@@ -5,43 +5,44 @@
 // ============================================================
 
 // ── REPLACE THIS with your deployed Apps Script Web App URL ──
-const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGITxMaf9fcJIVwepQ5PZXur0ZkduCNyE50i6WsMikP6nxQt6fdTZfab9h_Wx9y-u-wg/exec';
 
 // ── STATE ──
 let bids = [];
+let scrapedBids = [];
 let editingId = null;
 let isSaving = false;
 
 // ── COUNTY DATA ──
 const counties = [
-  { name:'Atlantic',   portal:'https://www.atlanticcountynj.gov/government/county-departments/department-of-administrative-services/division-of-budget-and-purchasing/open-bids', label:'County Purchasing Portal', note:'Also check acianj.org — CDBG Consulting RFP active', active:false },
-  { name:'Bergen',     portal:'https://bergenbids.com/', label:'Bergen Bids Portal', note:'IT & consulting regular procurement; BC-RFP-26-004 Environmental/Consulting Services', active:false },
-  { name:'Burlington', portal:'https://bcnj.co.burlington.nj.us/Pages/PT/Bids', label:'County Purchasing Portal', note:'Healthcare RFPs open — RFP-26-0017 Medication-Assisted Treatment', active:true },
-  { name:'Camden',     portal:'https://procurements.camdencounty.com/', label:'Camden Procurement Portal', note:'Marketing & consulting history via CCMUA; check regularly', active:false },
-  { name:'Cape May',   portal:'https://capemayprocure.org/', label:'County Purchasing Portal', note:'Register to download bid packages and view current opportunities', active:false },
-  { name:'Cumberland', portal:'https://www.cumberlandprocure.org/', label:'Cumberland Procure Portal', note:'Call (856) 453-2132 for bid details and submission procedures', active:false },
-  { name:'Essex',      portal:'https://www.essexcountynjprocure.org/bids/search?rfp_filter_status=current', label:'Essex Purchasing Portal', note:'Free registration required to download full RFP documents', active:false },
-  { name:'Gloucester', portal:'https://www.gloucestercountynj.gov/Bids.aspx', label:'County Bid Postings', note:'Crisis counselor & opioid recovery consulting RFPs recently posted', active:false },
-  { name:'Hudson',     portal:'http://www.hcnj.us/blog/category/purchasing/', label:'Hudson County Purchasing', note:'MIS & Telecom Admin RFP open — proposals due July 10, 2026', active:true },
-  { name:'Hunterdon',  portal:'https://www.co.hunterdon.nj.us/1399/Current-Requests-For-Proposals', label:'County RFP Listing', note:'Corporate Health Services (RFP-0067) and Risk Management bids active', active:false },
-  { name:'Mercer',     portal:'https://www.bidnetdirect.com/new-jersey/mercercounty', label:'BidNet Direct — Mercer', note:'Vision/healthcare and consulting solicitations open via BidNet', active:true },
-  { name:'Middlesex',  portal:'https://www.middlesexcountynj.gov/government/departments/department-of-economic-development/middlesex-county-improvement-authority/bidding-opportunities/new-procurement-portal', label:'OpenGov Procurement Portal', note:'IT consulting procured regularly; new portal via OpenGov', active:false },
-  { name:'Monmouth',   portal:'https://www.bidnetdirect.com/new-jersey', label:'BidNet NJ Purchasing Group', note:'Filter by Monmouth County on BidNet Direct NJ portal', active:false },
-  { name:'Morris',     portal:'https://www.bidnetdirect.com/new-jersey/morris-county', label:'BidNet Direct — Morris', note:'Active on NJ Purchasing Group; Morris View Healthcare Center bids frequent', active:false },
-  { name:'Ocean',      portal:'https://www.bidnetdirect.com/new-jersey', label:'BidNet NJ Purchasing Group', note:'Filter by Ocean County on BidNet Direct NJ portal', active:false },
-  { name:'Passaic',    portal:'https://www.passaicbids.com/', label:'Passaic County Purchasing', note:'Multiple healthcare RFQs open for Preakness Healthcare Center', active:true },
-  { name:'Salem',      portal:'https://www.salemcountynj.gov/category/bid-opportunities/', label:'Salem Bid Opportunities', note:'Smaller county; periodic consulting needs — check regularly', active:false },
-  { name:'Somerset',   portal:'https://www.somersetcountynj.gov/government/finance-and-administrative-services/purchasing/list-rfp', label:'Somerset RFP Listing', note:'Separate bid and RFP lists — check both tabs on the purchasing page', active:false },
-  { name:'Sussex',     portal:'https://www.sussex.nj.us/cn/bids/', label:'Sussex County Bids', note:'Submit online request form or email CASylvester@sussex.nj.us', active:false },
-  { name:'Union',      portal:'https://ucnj.org/vendor-opportunities/rfqs-and-rfps/current/', label:'Union Vendor Opportunities', note:'Auditing & Consulting Services 2026 RFP open; IT support services history', active:true },
-  { name:'Warren',     portal:'https://www.warrencountynj.gov/government/bids-and-purchases', label:'Warren Bids & Purchases', note:'Follows NJ Local Public Contracts Law — check for professional services', active:false },
+  { name:'Atlantic',   portal:'https://www.atlanticcountynj.gov/government/county-departments/department-of-administrative-services/division-of-budget-and-purchasing/open-bids', label:'County Purchasing Portal', note:'Also check acianj.org — CDBG Consulting RFP active' },
+  { name:'Bergen',     portal:'https://bergenbids.com/', label:'Bergen Bids Portal', note:'IT & consulting regular procurement; BC-RFP-26-004 Environmental/Consulting Services' },
+  { name:'Burlington', portal:'https://bcnj.co.burlington.nj.us/Pages/PT/Bids', label:'County Purchasing Portal', note:'Healthcare RFPs open — RFP-26-0017 Medication-Assisted Treatment' },
+  { name:'Camden',     portal:'https://procurements.camdencounty.com/', label:'Camden Procurement Portal', note:'Marketing & consulting history via CCMUA; check regularly' },
+  { name:'Cape May',   portal:'https://capemayprocure.org/', label:'County Purchasing Portal', note:'Register to download bid packages and view current opportunities' },
+  { name:'Cumberland', portal:'https://www.cumberlandprocure.org/', label:'Cumberland Procure Portal', note:'Call (856) 453-2132 for bid details and submission procedures' },
+  { name:'Essex',      portal:'https://www.essexcountynjprocure.org/bids/search?rfp_filter_status=current', label:'Essex Purchasing Portal', note:'Free registration required to download full RFP documents' },
+  { name:'Gloucester', portal:'https://www.gloucestercountynj.gov/Bids.aspx', label:'County Bid Postings', note:'Crisis counselor & opioid recovery consulting RFPs recently posted' },
+  { name:'Hudson',     portal:'http://www.hcnj.us/blog/category/purchasing/', label:'Hudson County Purchasing', note:'MIS & Telecom Admin RFP open — proposals due July 10, 2026' },
+  { name:'Hunterdon',  portal:'https://www.co.hunterdon.nj.us/1399/Current-Requests-For-Proposals', label:'County RFP Listing', note:'Corporate Health Services (RFP-0067) and Risk Management bids active' },
+  { name:'Mercer',     portal:'https://www.bidnetdirect.com/new-jersey/mercercounty', label:'BidNet Direct — Mercer', note:'Vision/healthcare and consulting solicitations open via BidNet' },
+  { name:'Middlesex',  portal:'https://www.middlesexcountynj.gov/government/departments/department-of-economic-development/middlesex-county-improvement-authority/bidding-opportunities/new-procurement-portal', label:'OpenGov Procurement Portal', note:'IT consulting procured regularly; new portal via OpenGov' },
+  { name:'Monmouth',   portal:'https://www.bidnetdirect.com/new-jersey', label:'BidNet NJ Purchasing Group', note:'Filter by Monmouth County on BidNet Direct NJ portal' },
+  { name:'Morris',     portal:'https://www.bidnetdirect.com/new-jersey/morris-county', label:'BidNet Direct — Morris', note:'Active on NJ Purchasing Group; Morris View Healthcare Center bids frequent' },
+  { name:'Ocean',      portal:'https://www.bidnetdirect.com/new-jersey', label:'BidNet NJ Purchasing Group', note:'Filter by Ocean County on BidNet Direct NJ portal' },
+  { name:'Passaic',    portal:'https://www.passaicbids.com/', label:'Passaic County Purchasing', note:'Multiple healthcare RFQs open for Preakness Healthcare Center' },
+  { name:'Salem',      portal:'https://www.salemcountynj.gov/category/bid-opportunities/', label:'Salem Bid Opportunities', note:'Smaller county; periodic consulting needs — check regularly' },
+  { name:'Somerset',   portal:'https://www.somersetcountynj.gov/government/finance-and-administrative-services/purchasing/list-rfp', label:'Somerset RFP Listing', note:'Separate bid and RFP lists — check both tabs on the purchasing page' },
+  { name:'Sussex',     portal:'https://www.sussex.nj.us/cn/bids/', label:'Sussex County Bids', note:'Submit online request form or email CASylvester@sussex.nj.us' },
+  { name:'Union',      portal:'https://ucnj.org/vendor-opportunities/rfqs-and-rfps/current/', label:'Union Vendor Opportunities', note:'Auditing & Consulting Services 2026 RFP open; IT support services history' },
+  { name:'Warren',     portal:'https://www.warrencountynj.gov/government/bids-and-purchases', label:'Warren Bids & Purchases', note:'Follows NJ Local Public Contracts Law — check for professional services' },
 ];
 
 // ── INIT ──
 function initApp() {
   populateCountyFilter();
-  renderDirectory();
   loadBids();
+  loadScrapedBids();
 }
 
 // ── API HELPERS ──
@@ -51,19 +52,30 @@ function getCredential() {
 }
 
 async function apiCall(action, payload = {}) {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    throw new Error('Apps Script URL not configured in tracker.js');
+  }
   const body = { action, credential: getCredential(), ...payload };
   const res = await fetch(APPS_SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(body),
     redirect: 'follow'
-});
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
+  });
+  if (!res.ok) throw new Error('Network error: ' + res.status);
+  let data;
+  try { data = await res.json(); } catch { throw new Error('Invalid response from server.'); }
+  if (data.error) {
+    if (data.error.includes('expired') || data.error.includes('Invalid token')) {
+      sessionStorage.removeItem('adz_user');
+      window.location.href = '/tracker/login.html';
+    }
+    throw new Error(data.error);
+  }
   return data;
 }
 
-// ── LOAD BIDS FROM SHEET ──
+// ── LOAD BIDS ──
 async function loadBids() {
   try {
     showTableLoading(true);
@@ -71,11 +83,26 @@ async function loadBids() {
     bids = data.bids || [];
     renderStats();
     renderTable();
+    renderNotifications();
   } catch (e) {
     showToast('Could not load bids. Check your connection.', 'error');
+    showTableError(e.message);
     console.error(e);
   } finally {
     showTableLoading(false);
+  }
+}
+
+// ── LOAD SCRAPED BIDS ──
+async function loadScrapedBids() {
+  try {
+    const data = await apiCall('getScrapedBids');
+    scrapedBids = data.bids || [];
+    renderDirectory();
+  } catch (e) {
+    console.error('Could not load scraped bids:', e);
+    scrapedBids = [];
+    renderDirectory();
   }
 }
 
@@ -86,6 +113,14 @@ function showTableLoading(on) {
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2.5rem;color:var(--muted);font-size:0.85rem;">Loading bids...</td></tr>`;
     empty.style.display = 'none';
   }
+}
+
+function showTableError(msg) {
+  document.getElementById('bidTableBody').innerHTML = `
+    <tr><td colspan="8" style="text-align:center;padding:3rem;">
+      <div style="color:var(--red);font-size:0.85rem;margin-bottom:0.75rem;">⚠️ ${msg}</div>
+      <button class="btn btn-ghost btn-sm" onclick="loadBids()">Try Again</button>
+    </td></tr>`;
 }
 
 // ── TABS ──
@@ -139,7 +174,7 @@ function statusBadge(s) {
 }
 
 function renderTable() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
+  const q  = document.getElementById('searchInput').value.toLowerCase();
   const co = document.getElementById('filterCounty').value;
   const st = document.getElementById('filterStatus').value;
   const ca = document.getElementById('filterCat').value;
@@ -155,11 +190,7 @@ function renderTable() {
   const tbody = document.getElementById('bidTableBody');
   const empty = document.getElementById('emptyState');
 
-  if (!filtered.length) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
+  if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
 
   tbody.innerHTML = filtered.map(b => `
@@ -194,18 +225,99 @@ function populateCountyFilter() {
   });
 }
 
-// ── DIRECTORY ──
+// ── DIRECTORY — scraped bids per county ──
 function renderDirectory() {
-  document.getElementById('countyGrid').innerHTML = counties.map(c => `
-    <div class="county-card">
-      <div class="county-name">
-        ${c.name} County
-        ${c.active ? '<span class="active-badge">● Active</span>' : ''}
-      </div>
-      <a class="county-link" href="${c.portal}" target="_blank">🔗 ${c.label}</a>
-      <div class="county-note">${c.note}</div>
-    </div>
-  `).join('');
+  const activeBidCounties = new Set(
+    bids
+      .filter(b => ['new','reviewing','submitted'].includes(b.status))
+      .map(b => b.county)
+  );
+
+  // Track which scraped bids are already in the tracker by link/title match
+  const trackerTitles = new Set(bids.map(b => b.title.toLowerCase().trim()));
+
+  document.getElementById('countyGrid').innerHTML = counties.map(c => {
+    const hasActiveBid   = activeBidCounties.has(c.name);
+    const countyScraped  = scrapedBids.filter(b => b.county === c.name);
+
+    let bidsHtml = '';
+    if (countyScraped.length === 0) {
+      bidsHtml = `<div class="county-no-bids">No bids detected yet — scraper runs daily at 8am</div>`;
+    } else {
+      bidsHtml = countyScraped.map(b => {
+        const alreadyAdded = trackerTitles.has(b.title.toLowerCase().trim()) || b.addedToTracker === 'yes';
+        let deadlineClass  = '';
+        let deadlineText   = '';
+        if (b.deadline) {
+          const days    = (new Date(b.deadline) - new Date()) / 86400000;
+          deadlineText  = fmtDate(b.deadline);
+          deadlineClass = days < 0 ? 'past' : days <= 14 ? 'soon' : '';
+        }
+
+        return `
+          <div class="county-bid-item">
+            <div class="county-bid-info">
+              <div class="county-bid-title">
+                ${b.link
+                  ? `<a href="${b.link}" target="_blank" style="color:var(--accent);text-decoration:none;">${b.title}</a>`
+                  : b.title}
+              </div>
+              <div class="county-bid-row2">
+                ${b.category ? `<span class="county-bid-cat">${b.category}</span>` : ''}
+                ${deadlineText ? `<span class="county-bid-deadline ${deadlineClass}">Due ${deadlineText}</span>` : ''}
+              </div>
+            </div>
+            <div class="county-bid-action">
+              ${alreadyAdded
+                ? `<span class="county-bid-added">✓ Added</span>`
+                : `<button class="county-bid-add-btn" onclick="addScrapedToTracker('${b.key}', this)">+ Track</button>`}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    return `
+      <div class="county-card">
+        <div class="county-name">
+          ${c.name} County
+          ${hasActiveBid ? '<span class="active-badge">● Active Bid</span>' : ''}
+        </div>
+        <a class="county-link" href="${c.portal}" target="_blank">🔗 ${c.label}</a>
+        <div class="county-note">${c.note}</div>
+        <div class="county-bids">
+          <div class="county-bids-label">
+            Bid Monitor
+            ${countyScraped.length > 0 ? `<span>${countyScraped.length}</span>` : ''}
+          </div>
+          <div class="county-bids-list">${bidsHtml}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── ADD SCRAPED BID TO TRACKER ────────────────────────────────
+async function addScrapedToTracker(bidKey, btnEl) {
+  btnEl.textContent = 'Adding...';
+  btnEl.disabled = true;
+  try {
+    await apiCall('addScrapedToTracker', { bidKey });
+    // Refresh both datasets
+    const [bidsData, scrapedData] = await Promise.all([
+      apiCall('getBids'),
+      apiCall('getScrapedBids'),
+    ]);
+    bids        = bidsData.bids        || [];
+    scrapedBids = scrapedData.bids     || [];
+    renderStats();
+    renderTable();
+    renderNotifications();
+    renderDirectory();
+    showToast('Bid added to tracker.', 'success');
+  } catch (e) {
+    btnEl.textContent = '+ Track';
+    btnEl.disabled = false;
+    showToast('Failed to add bid: ' + e.message, 'error');
+  }
 }
 
 // ── MODAL ──
@@ -242,7 +354,7 @@ async function saveBid() {
 
   const bid = {
     id:       editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2)),
-    title,    county,
+    title, county,
     category: document.getElementById('fCategory').value,
     bidNum:   document.getElementById('fBidNum').value.trim(),
     deadline: document.getElementById('fDeadline').value,
@@ -260,18 +372,15 @@ async function saveBid() {
   saveBtn.disabled = true;
 
   try {
-    const action = editingId ? 'updateBid' : 'addBid';
-    await apiCall(action, { bid });
-
+    await apiCall(editingId ? 'updateBid' : 'addBid', { bid });
     if (editingId) {
-      const idx = bids.findIndex(b => b.id === editingId);
-      bids[idx] = bid;
+      bids[bids.findIndex(b => b.id === editingId)] = bid;
     } else {
       bids.unshift(bid);
     }
-
     renderStats();
     renderTable();
+    renderNotifications();
     closeModal();
     showToast(editingId ? 'Bid updated.' : 'Bid added.', 'success');
   } catch (e) {
@@ -290,6 +399,7 @@ async function deleteBid(id) {
     bids = bids.filter(b => b.id !== id);
     renderStats();
     renderTable();
+    renderNotifications();
     showToast('Bid removed.', 'success');
   } catch (e) {
     showToast('Delete failed. Please try again.', 'error');
@@ -310,6 +420,110 @@ function exportCSV() {
   a.download = `adz-sbe-bids-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   showToast('CSV exported.', 'success');
+}
+
+// ── NOTIFICATIONS ──
+const NOTIF_KEY = 'adz_notif_cleared_at';
+
+function getNewBids() {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const clearedAt   = localStorage.getItem(NOTIF_KEY);
+  const clearedDate = clearedAt ? new Date(clearedAt) : null;
+  return bids.filter(b => {
+    if (!b.createdAt) return false;
+    const created = new Date(b.createdAt);
+    if (created < sevenDaysAgo) return false;
+    if (clearedDate && created <= clearedDate) return false;
+    return true;
+  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function renderNotifications() {
+  const newBids = getNewBids();
+  const badge   = document.getElementById('notifBadge');
+  const list    = document.getElementById('notifList');
+  const footer  = document.getElementById('notifFooter');
+
+  if (newBids.length > 0) {
+    badge.textContent = newBids.length > 9 ? '9+' : newBids.length;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+
+  if (newBids.length === 0) {
+    list.innerHTML = `
+      <div class="notif-empty">
+        <div class="notif-empty-icon">✅</div>
+        <div>No new bids in the last 7 days</div>
+      </div>`;
+    footer.textContent = '';
+    return;
+  }
+
+  list.innerHTML = newBids.map(b => {
+    const created  = new Date(b.createdAt);
+    const daysAgo  = Math.floor((new Date() - created) / 86400000);
+    const timeText = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : daysAgo + ' days ago';
+    return `
+      <div class="notif-item" onclick="highlightBid('${b.id}')">
+        <div class="notif-item-title">${b.title}</div>
+        <div class="notif-item-meta">
+          <span class="notif-item-county">${b.county || '—'}</span>
+          <span>${timeText}</span>
+          ${b.category ? `<span>${b.category}</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  footer.textContent = `${newBids.length} new bid${newBids.length > 1 ? 's' : ''} added in the last 7 days`;
+}
+
+function toggleNotifDropdown() {
+  const dropdown = document.getElementById('notifDropdown');
+  dropdown.classList.toggle('open');
+  if (dropdown.classList.contains('open')) {
+    setTimeout(() => document.addEventListener('click', closeNotifOnOutsideClick), 0);
+  }
+}
+
+function closeNotifOnOutsideClick(e) {
+  const wrap = document.getElementById('notifBtn').closest('.notif-wrap');
+  if (!wrap.contains(e.target)) {
+    document.getElementById('notifDropdown').classList.remove('open');
+    document.removeEventListener('click', closeNotifOnOutsideClick);
+  }
+}
+
+function clearNotifications() {
+  localStorage.setItem(NOTIF_KEY, new Date().toISOString());
+  document.getElementById('notifDropdown').classList.remove('open');
+  renderNotifications();
+  showToast('Notifications cleared.', 'success');
+}
+
+function highlightBid(id) {
+  document.getElementById('notifDropdown').classList.remove('open');
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tracker').classList.add('active');
+  document.querySelector('.tab').classList.add('active');
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterCounty').value = '';
+  document.getElementById('filterStatus').value = '';
+  document.getElementById('filterCat').value = '';
+  renderTable();
+  setTimeout(() => {
+    const rows = document.querySelectorAll('#bidTableBody tr');
+    rows.forEach(row => {
+      if (row.innerHTML.includes(id)) {
+        row.style.background = 'rgba(26,110,245,0.08)';
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => row.style.background = '', 2000);
+      }
+    });
+  }, 100);
 }
 
 // ── TOAST ──
