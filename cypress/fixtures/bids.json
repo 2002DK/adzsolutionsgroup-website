@@ -1,0 +1,32 @@
+[
+  {
+    "id": "b1",
+    "title": "IT Support Services RFP",
+    "county": "Camden",
+    "category": "IT Services",
+    "bidNum": "RFP-26-0011",
+    "status": "drafting",
+    "notes": "Initial review pending",
+    "createdAt": "2026-08-20T12:00:00.000Z"
+  },
+  {
+    "id": "b2",
+    "title": "Healthcare Consulting Services",
+    "county": "Burlington",
+    "category": "Healthcare",
+    "bidNum": "RFP-26-0017",
+    "status": "submitted",
+    "notes": "Medication-Assisted Treatment program",
+    "createdAt": "2026-08-15T09:30:00.000Z"
+  },
+  {
+    "id": "b3",
+    "title": "Web Development — County Portal Refresh",
+    "county": "Essex",
+    "category": "Web Development",
+    "bidNum": "ESX-2026-004",
+    "status": "won",
+    "notes": "Contract awarded",
+    "createdAt": "2026-06-01T08:00:00.000Z"
+  }
+]

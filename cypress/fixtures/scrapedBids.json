@@ -1,0 +1,20 @@
+[
+  {
+    "key": "s1",
+    "title": "Marketing & Outreach Services",
+    "county": "Camden",
+    "category": "Marketing",
+    "deadline": "2026-09-30",
+    "link": "https://procurements.camdencounty.com/",
+    "addedToTracker": "no"
+  },
+  {
+    "key": "s2",
+    "title": "IT Support Services RFP",
+    "county": "Camden",
+    "category": "IT Services",
+    "deadline": "2026-09-10",
+    "link": "https://procurements.camdencounty.com/",
+    "addedToTracker": "yes"
+  }
+]

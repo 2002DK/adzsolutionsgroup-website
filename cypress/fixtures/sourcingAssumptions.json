@@ -1,0 +1,6 @@
+{
+  "referralFeePct": 15,
+  "otherPerUnitCost": 0,
+  "storageFeePerCuFtMonth": null,
+  "targetPrices": [99.99, 109.99, 119.99]
+}
