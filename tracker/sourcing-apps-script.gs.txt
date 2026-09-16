@@ -1,0 +1,1138 @@
+// ============================================================
+//  ADZ Solutions — NJ SBE Bid Tracker
+//  apps-script.gs — v5 (sourcing added)
+//
+//  PASTE THIS into Extensions → Apps Script (from inside your Sheet),
+//  replacing the entire contents of Code.gs. This is your full v4
+//  script with the six new "SOURCING" functions added and wired
+//  into doPost() — nothing else was changed.
+//
+//  Then: Deploy → Manage deployments → pencil icon → Version:
+//        "New version" → Deploy. Editing alone does NOT update the
+//        live URL — you must cut a new deployment version.
+//
+//  The SourcingSuppliers and SourcingAssumptions sheets are created
+//  automatically the first time the Sourcing tab loads — same as
+//  ScraperResults/ScraperSeen already do. Nothing to set up by hand.
+//
+//  TRIGGER 1 — Weekly deadline reminders:
+//  Function: sendDeadlineReminders
+//  Type: Week timer | Every Monday | 7am-8am
+//
+//  TRIGGER 2 — Daily bid scraper:
+//  Function: scrapeCountyBids
+//  Type: Day timer | 8am-9am
+//
+//  Both triggers are set up the same way:
+//  1. Click Triggers (clock icon on left sidebar)
+//  2. Click + Add Trigger (bottom right)
+//  3. Fill in the function name, Time-driven, and time above
+//  4. Click Save — repeat for the second trigger
+// ============================================================
+
+const SHEET_NAME     = 'Bids';
+const ALLOWED_DOMAIN = 'adzsolutionsgroup.com';
+
+// ── ADD YOUR TEAM EMAILS HERE ─────────────────────────────────
+const TEAM_EMAILS = [
+  'daanyalkaleem@adzsolutionsgroup.com',
+  // 'teammate2@adzsolutionsgroup.com',
+  // 'teammate3@adzsolutionsgroup.com',
+];
+
+const COLUMNS = [
+  'id','title','county','category','bidNum',
+  'deadline','value','status','assigned',
+  'contact','link','notes','createdAt'
+];
+
+// Active statuses — only these trigger deadline reminders
+const ACTIVE_STATUSES = ['new', 'reviewing', 'submitted'];
+
+// ── ENTRY POINTS ──────────────────────────────────────────────
+function doOptions(e) {
+  return ContentService
+    .createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
+function doGet(e) {
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'ADZ Bid Tracker API online' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const user = verifyCredential(body.credential);
+
+    switch (body.action) {
+      case 'getBids':             return respond(getBids());
+      case 'addBid':              return respond(addBid(body.bid, user.email));
+      case 'updateBid':           return respond(updateBid(body.bid));
+      case 'deleteBid':           return respond(deleteBid(body.id));
+      case 'getScrapedBids':      return respond(getScrapedBids());
+      case 'addScrapedToTracker': return respond(addScrapedToTracker(body.bidKey, user.email));
+
+      // ── SOURCING ──
+      case 'getSourcingSuppliers':      return respond(getSourcingSuppliers());
+      case 'addSourcingSupplier':       return respond(addSourcingSupplier(body.supplier));
+      case 'updateSourcingSupplier':    return respond(updateSourcingSupplier(body.supplier));
+      case 'deleteSourcingSupplier':    return respond(deleteSourcingSupplier(body.id));
+      case 'getSourcingAssumptions':    return respond(getSourcingAssumptions());
+      case 'updateSourcingAssumptions': return respond(updateSourcingAssumptions(body.assumptions));
+
+      default:                    return respondError('Unknown action: ' + body.action);
+    }
+  } catch (err) {
+    return respondError(err.message || 'Server error');
+  }
+}
+
+// ── AUTH ──────────────────────────────────────────────────────
+function verifyCredential(credential) {
+  if (!credential) throw new Error('No credential provided');
+
+  const url  = 'https://oauth2.googleapis.com/tokeninfo?id_token=' + credential;
+  const res  = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  const data = JSON.parse(res.getContentText());
+
+  if (data.error || data.error_description) {
+    throw new Error('Invalid or expired token. Please sign out and sign back in.');
+  }
+
+  const email  = (data.email || '').toLowerCase();
+  const domain = email.split('@')[1] || '';
+
+  if (domain !== ALLOWED_DOMAIN) {
+    throw new Error('Access denied: ' + email);
+  }
+
+  return { email, name: data.name || email };
+}
+
+// ── SHEET HELPERS ─────────────────────────────────────────────
+function getSheet() {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  let   sheet = ss.getSheetByName(SHEET_NAME);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.appendRow(COLUMNS);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, COLUMNS.length)
+         .setBackground('#0f1923')
+         .setFontColor('#ffffff')
+         .setFontWeight('bold');
+    sheet.setColumnWidth(2, 240);
+    sheet.setColumnWidth(12, 300);
+  }
+  return sheet;
+}
+
+function rowToObj(row) {
+  const obj = {};
+  COLUMNS.forEach((col, i) => obj[col] = row[i] !== undefined ? String(row[i]) : '');
+  return obj;
+}
+
+function objToRow(bid) {
+  return COLUMNS.map(col => bid[col] || '');
+}
+
+// ── CRUD ──────────────────────────────────────────────────────
+function getBids() {
+  const sheet = getSheet();
+  const data  = sheet.getDataRange().getValues();
+  if (data.length <= 1) return { bids: [] };
+
+  const bids = data.slice(1)
+    .filter(row => row[0] && row[0] !== '')
+    .map(rowToObj)
+    .reverse();
+
+  return { bids };
+}
+
+function addBid(bid, addedBy) {
+  if (!bid || !bid.id) throw new Error('Invalid bid data');
+  const sheet = getSheet();
+  bid.createdAt = new Date().toISOString();
+  sheet.appendRow(objToRow(bid));
+  return { success: true, id: bid.id };
+}
+
+function updateBid(bid) {
+  if (!bid || !bid.id) throw new Error('Invalid bid data');
+  const sheet = getSheet();
+  const data  = sheet.getDataRange().getValues();
+  const idCol = COLUMNS.indexOf('id');
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idCol]) === String(bid.id)) {
+      bid.createdAt = String(data[i][COLUMNS.indexOf('createdAt')] || '');
+      sheet.getRange(i + 1, 1, 1, COLUMNS.length).setValues([objToRow(bid)]);
+      return { success: true };
+    }
+  }
+  throw new Error('Bid not found: ' + bid.id);
+}
+
+function deleteBid(id) {
+  if (!id) throw new Error('No ID provided');
+  const sheet = getSheet();
+  const data  = sheet.getDataRange().getValues();
+  const idCol = COLUMNS.indexOf('id');
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idCol]) === String(id)) {
+      sheet.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  throw new Error('Bid not found: ' + id);
+}
+
+// ── EMAIL NOTIFICATIONS ───────────────────────────────────────
+// Runs every Monday morning via time-based trigger
+// Checks for any active bids with deadlines within 7 days
+function sendDeadlineReminders() {
+  const sheet = getSheet();
+  const data  = sheet.getDataRange().getValues();
+  if (data.length <= 1) return;
+
+  const today   = new Date();
+  today.setHours(0, 0, 0, 0);
+  const in7Days = new Date(today);
+  in7Days.setDate(today.getDate() + 7);
+
+  // Find bids due within 7 days that are still active
+  const upcoming = data.slice(1)
+    .filter(row => row[0] && row[0] !== '')
+    .map(rowToObj)
+    .filter(bid => {
+      if (!ACTIVE_STATUSES.includes(bid.status)) return false;
+      if (!bid.deadline) return false;
+      const dl = new Date(bid.deadline + 'T00:00:00');
+      return dl >= today && dl <= in7Days;
+    })
+    .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+  // Nothing due — no email needed
+  if (upcoming.length === 0) return;
+
+  const subject = upcoming.length === 1
+    ? '⚠️ ADZ Bid Tracker — 1 Bid Due Within 7 Days'
+    : '⚠️ ADZ Bid Tracker — ' + upcoming.length + ' Bids Due Within 7 Days';
+
+  const body    = buildEmailBody(upcoming, today);
+  const htmlBody = buildEmailHtml(upcoming, today);
+
+  // Send to all team members
+  TEAM_EMAILS.forEach(email => {
+    if (!email || email.startsWith('//')) return;
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      body: body,
+      htmlBody: htmlBody
+    });
+  });
+
+  Logger.log('Deadline reminder sent for ' + upcoming.length + ' bid(s) to ' + TEAM_EMAILS.length + ' recipient(s)');
+}
+
+// Plain text fallback for email clients that don't render HTML
+function buildEmailBody(bids, today) {
+  let text = 'ADZ Solutions — NJ SBE Bid Tracker\n';
+  text += 'Weekly Deadline Reminder\n';
+  text += '================================\n\n';
+  text += 'The following bids are due within the next 7 days:\n\n';
+
+  bids.forEach(bid => {
+    const dl      = new Date(bid.deadline + 'T00:00:00');
+    const daysLeft = Math.ceil((dl - today) / 86400000);
+    const dueText  = daysLeft === 0 ? 'DUE TODAY'
+                   : daysLeft === 1 ? 'Due tomorrow'
+                   : 'Due in ' + daysLeft + ' days';
+
+    text += '• ' + bid.title + '\n';
+    text += '  County: ' + (bid.county || '—') + '\n';
+    text += '  Category: ' + (bid.category || '—') + '\n';
+    text += '  Deadline: ' + formatDate(bid.deadline) + ' (' + dueText + ')\n';
+    text += '  Assigned: ' + (bid.assigned || 'Unassigned') + '\n';
+    text += '  Status: ' + bid.status + '\n';
+    if (bid.bidNum) text += '  RFP #: ' + bid.bidNum + '\n';
+    if (bid.contact) text += '  Contact: ' + bid.contact + '\n';
+    if (bid.link) text += '  Portal: ' + bid.link + '\n';
+    text += '\n';
+  });
+
+  text += '================================\n';
+  text += 'Log in to the Employee Portal to update bid statuses.\n';
+  text += 'https://adzsolutionsgroup.com/tracker/login.html\n\n';
+  text += 'ADZ Solutions LLC · Marlton, NJ · (856) 719-1356\n';
+  return text;
+}
+
+// HTML email — styled to match the site
+function buildEmailHtml(bids, today) {
+  const rows = bids.map(bid => {
+    const dl       = new Date(bid.deadline + 'T00:00:00');
+    const daysLeft = Math.ceil((dl - today) / 86400000);
+    const dueText  = daysLeft === 0 ? 'DUE TODAY'
+                   : daysLeft === 1 ? 'Due tomorrow'
+                   : 'Due in ' + daysLeft + ' days';
+    const dueColor = daysLeft === 0 ? '#dc2626'
+                   : daysLeft <= 3  ? '#b45309'
+                   : '#16a34a';
+    const statusColors = {
+      new: '#1a6ef5', reviewing: '#7c3aed',
+      submitted: '#b45309', won: '#16a34a',
+      lost: '#dc2626', passed: '#5c6b7a'
+    };
+    const statusColor = statusColors[bid.status] || '#5c6b7a';
+
+    return `
+      <tr>
+        <td style="padding:16px;border-bottom:1px solid #eef1f6;vertical-align:top;">
+          <div style="font-weight:600;color:#0f1923;margin-bottom:4px;">
+            ${bid.link
+              ? '<a href="' + bid.link + '" style="color:#1a6ef5;text-decoration:none;">' + bid.title + '</a>'
+              : bid.title}
+          </div>
+          ${bid.bidNum ? '<div style="font-size:12px;color:#5c6b7a;">' + bid.bidNum + '</div>' : ''}
+        </td>
+        <td style="padding:16px;border-bottom:1px solid #eef1f6;color:#5c6b7a;font-size:14px;vertical-align:top;">
+          ${bid.county || '—'}
+        </td>
+        <td style="padding:16px;border-bottom:1px solid #eef1f6;vertical-align:top;">
+          <span style="background:#eef1f6;color:#5c6b7a;padding:2px 8px;border-radius:4px;font-size:12px;">
+            ${bid.category || '—'}
+          </span>
+        </td>
+        <td style="padding:16px;border-bottom:1px solid #eef1f6;vertical-align:top;">
+          <div style="font-weight:600;color:${dueColor};font-size:14px;">${formatDate(bid.deadline)}</div>
+          <div style="font-size:12px;color:${dueColor};margin-top:2px;">${dueText}</div>
+        </td>
+        <td style="padding:16px;border-bottom:1px solid #eef1f6;color:#5c6b7a;font-size:14px;vertical-align:top;">
+          ${bid.assigned || 'Unassigned'}
+        </td>
+        <td style="padding:16px;border-bottom:1px solid #eef1f6;vertical-align:top;">
+          <span style="background:${statusColor}18;color:${statusColor};padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;">
+            ${bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}
+          </span>
+        </td>
+      </tr>`;
+  }).join('');
+
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f5f7fa;font-family:'DM Sans',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f7fa;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:680px;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:#0f1923;border-radius:12px 12px 0 0;padding:28px 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td>
+                  <div style="font-family:Arial,sans-serif;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;">
+                    ADZ<span style="color:#1a6ef5;">Solutions</span>
+                  </div>
+                  <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:3px;letter-spacing:0.08em;text-transform:uppercase;">
+                    NJ SBE Bid Tracker
+                  </div>
+                </td>
+                <td align="right">
+                  <span style="background:rgba(220,38,38,0.15);color:#ef4444;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;">
+                    ⚠️ Deadline Alert
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Alert banner -->
+        <tr>
+          <td style="background:#1a6ef5;padding:16px 32px;">
+            <p style="margin:0;color:#ffffff;font-size:14px;">
+              <strong>${bids.length} bid${bids.length > 1 ? 's are' : ' is'} due within the next 7 days.</strong>
+              Review and take action before the deadlines pass.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Table -->
+        <tr>
+          <td style="background:#ffffff;border-radius:0 0 12px 12px;overflow:hidden;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <!-- Table header -->
+              <tr style="background:#0f1923;">
+                <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);">Bid / RFP</th>
+                <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);">County</th>
+                <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);">Category</th>
+                <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);">Deadline</th>
+                <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);">Assigned</th>
+                <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);">Status</th>
+              </tr>
+              ${rows}
+            </table>
+
+            <!-- CTA -->
+            <div style="padding:24px 32px;border-top:1px solid #eef1f6;text-align:center;">
+              <a href="https://adzsolutionsgroup.com/tracker/login.html"
+                 style="display:inline-block;background:#1a6ef5;color:#ffffff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:500;font-size:14px;box-shadow:0 4px 16px rgba(26,110,245,0.3);">
+                Open Bid Tracker →
+              </a>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:20px 0;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#5c6b7a;">
+              ADZ Solutions LLC · 23 Milford Dr, Marlton, NJ 08053 · (856) 719-1356
+            </p>
+            <p style="margin:6px 0 0;font-size:11px;color:#9ca3af;">
+              You're receiving this because you're listed as a team member in the ADZ SBE Bid Tracker.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+// ============================================================
+//  BID SCRAPER
+//  Runs on a schedule to check 6 county portals for new bids
+//  matching ADZ Solutions' service categories.
+//
+//  SET UP THE TRIGGER:
+//  1. In Apps Script editor click Triggers (clock icon)
+//  2. Click + Add Trigger
+//  3. Choose function: scrapeCountyBids
+//  4. Event source: Time-driven
+//  5. Type: Day timer
+//  6. Time: 8am - 9am
+//  7. Click Save
+// ============================================================
+
+// ── KEYWORDS TO MATCH ─────────────────────────────────────────
+// A bid title must contain at least one of these to be added
+const SCRAPER_KEYWORDS = [
+  'it ', 'information technology', 'technology services',
+  'consulting', 'consultant', 'advisory',
+  'marketing', 'communications', 'outreach', 'digital media',
+  'web', 'website', 'software', 'application', 'app ',
+  'data', 'database', 'analytics', 'reporting',
+  'network', 'infrastructure', 'cybersecurity', 'security',
+  'healthcare', 'health care', 'medical', 'health services',
+  'management services', 'project management',
+  'systems integration', 'system integration',
+  'staffing', 'personnel', 'training',
+  'social media', 'graphic design', 'creative services',
+  'public relations', 'media'
+];
+
+// ── SEEN BIDS SHEET ───────────────────────────────────────────
+// Tracks bid IDs we've already processed so we don't add duplicates
+const SEEN_SHEET_NAME = 'ScraperSeen';
+
+function getSeenSheet() {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  let   sheet = ss.getSheetByName(SEEN_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SEEN_SHEET_NAME);
+    sheet.appendRow(['bidKey', 'addedAt']);
+    sheet.setColumnWidth(1, 300);
+  }
+  return sheet;
+}
+
+function getSeenKeys() {
+  const sheet = getSeenSheet();
+  const data  = sheet.getDataRange().getValues();
+  return new Set(data.slice(1).map(r => r[0]).filter(Boolean));
+}
+
+function markSeen(key) {
+  getSeenSheet().appendRow([key, new Date().toISOString()]);
+}
+
+// ── KEYWORD MATCH ─────────────────────────────────────────────
+function isRelevant(title) {
+  const t = title.toLowerCase();
+  return SCRAPER_KEYWORDS.some(k => t.includes(k));
+}
+
+// ── MAIN SCRAPER FUNCTION ─────────────────────────────────────
+function scrapeCountyBids() {
+  const seenKeys   = getSeenKeys();
+  const newBids    = [];
+
+  const scrapers = [
+    scrapeGloucester,
+    scrapeUnion,
+    scrapeSussex,
+    scrapePassaic,
+    scrapeCamden,
+    scrapeSalem,
+  ];
+
+  scrapers.forEach(fn => {
+    try {
+      const results = fn();
+      results.forEach(bid => {
+        if (seenKeys.has(bid.key)) return;
+        if (!isRelevant(bid.title)) return;
+        newBids.push(bid);
+        markSeen(bid.key);
+      });
+    } catch (err) {
+      Logger.log('Scraper error: ' + err.message);
+    }
+  });
+
+  if (newBids.length === 0) {
+    Logger.log('Scraper: no new relevant bids found.');
+    return;
+  }
+
+  // Write each new bid to the ScraperResults sheet (NOT the Bids sheet)
+  newBids.forEach(bid => {
+    const result = {
+      key:       bid.key,
+      title:     bid.title,
+      county:    bid.county,
+      category:  guessCategory(bid.title),
+      bidNum:    bid.bidNum   || '',
+      deadline:  bid.deadline || '',
+      link:      bid.link     || '',
+      scrapedAt: new Date().toISOString(),
+      addedToTracker: 'no',
+    };
+    writeScraperResult(result);
+  });
+
+  // Send alert email to team
+  sendScraperAlert(newBids);
+  Logger.log('Scraper: added ' + newBids.length + ' new bid(s) to ScraperResults.');
+}
+
+// ── SCRAPER RESULTS SHEET ─────────────────────────────────────
+const SCRAPER_SHEET_NAME = 'ScraperResults';
+const SCRAPER_COLUMNS = [
+  'key','title','county','category','bidNum',
+  'deadline','link','scrapedAt','addedToTracker'
+];
+
+function getScraperSheet() {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  let   sheet = ss.getSheetByName(SCRAPER_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SCRAPER_SHEET_NAME);
+    sheet.appendRow(SCRAPER_COLUMNS);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, SCRAPER_COLUMNS.length)
+         .setBackground('#0f1923')
+         .setFontColor('#ffffff')
+         .setFontWeight('bold');
+    sheet.setColumnWidth(2, 280);
+    sheet.setColumnWidth(7, 200);
+  }
+  return sheet;
+}
+
+function writeScraperResult(result) {
+  const sheet = getScraperSheet();
+  sheet.appendRow(SCRAPER_COLUMNS.map(col => result[col] || ''));
+}
+
+// ── GET SCRAPED BIDS (last 30 days, not yet added to tracker) ─
+function getScrapedBids() {
+  const sheet = getScraperSheet();
+  const data  = sheet.getDataRange().getValues();
+  if (data.length <= 1) return { bids: [] };
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const bids = data.slice(1)
+    .filter(row => row[0] && row[0] !== '')
+    .map(row => {
+      const obj = {};
+      SCRAPER_COLUMNS.forEach((col, i) => obj[col] = row[i] ? String(row[i]) : '');
+      return obj;
+    })
+    .filter(b => {
+      if (!b.scrapedAt) return false;
+      return new Date(b.scrapedAt) >= thirtyDaysAgo;
+    })
+    .sort((a, b) => new Date(b.scrapedAt) - new Date(a.scrapedAt));
+
+  return { bids };
+}
+
+// ── ADD SCRAPED BID TO TRACKER ────────────────────────────────
+function addScrapedToTracker(bidKey, addedBy) {
+  if (!bidKey) throw new Error('No bid key provided');
+
+  // Find the scraped bid
+  const sheet = getScraperSheet();
+  const data  = sheet.getDataRange().getValues();
+  const keyCol = SCRAPER_COLUMNS.indexOf('key');
+  let   scraped = null;
+  let   rowIndex = -1;
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][keyCol]) === String(bidKey)) {
+      scraped = {};
+      SCRAPER_COLUMNS.forEach((col, j) => scraped[col] = data[i][j] ? String(data[i][j]) : '');
+      rowIndex = i + 1;
+      break;
+    }
+  }
+
+  if (!scraped) throw new Error('Scraped bid not found: ' + bidKey);
+
+  // Add to main Bids sheet
+  const newBid = {
+    id:        Utilities.getUuid(),
+    title:     scraped.title,
+    county:    scraped.county,
+    category:  scraped.category,
+    bidNum:    scraped.bidNum   || '',
+    deadline:  scraped.deadline || '',
+    value:     '',
+    status:    'new',
+    assigned:  '',
+    contact:   '',
+    link:      scraped.link     || '',
+    notes:     'Added from Bid Monitor. Originally detected by scraper on ' + new Date(scraped.scrapedAt).toLocaleDateString(),
+    createdAt: new Date().toISOString(),
+  };
+  addBid(newBid, addedBy);
+
+  // Mark as added in ScraperResults sheet
+  const addedCol = SCRAPER_COLUMNS.indexOf('addedToTracker') + 1;
+  sheet.getRange(rowIndex, addedCol).setValue('yes');
+
+  return { success: true, bidId: newBid.id };
+}
+
+// ── CATEGORY GUESSER ─────────────────────────────────────────
+function guessCategory(title) {
+  const t = title.toLowerCase();
+  if (t.includes('market') || t.includes('communicat') || t.includes('outreach') || t.includes('social media') || t.includes('graphic') || t.includes('public relation') || t.includes('media')) return 'Marketing';
+  if (t.includes('health') || t.includes('medical') || t.includes('clinical') || t.includes('pharma')) return 'Healthcare';
+  if (t.includes('web') || t.includes('website') || t.includes('portal') || t.includes('app ') || t.includes('software')) return 'Web Development';
+  if (t.includes('it ') || t.includes('information tech') || t.includes('network') || t.includes('cyber') || t.includes('data') || t.includes('system') || t.includes('infrastructure')) return 'IT Services';
+  if (t.includes('consult') || t.includes('advisor') || t.includes('management service') || t.includes('project management')) return 'Consulting';
+  return 'Other';
+}
+
+// ── SCRAPER ALERT EMAIL ───────────────────────────────────────
+function sendScraperAlert(newBids) {
+  const subject = '🆕 ADZ Bid Scraper — ' + newBids.length + ' New Bid' + (newBids.length > 1 ? 's' : '') + ' Detected';
+
+  const rows = newBids.map(b => `
+    <tr>
+      <td style="padding:12px 16px;border-bottom:1px solid #eef1f6;font-weight:500;color:#0f1923;font-size:14px;">
+        ${b.link ? '<a href="' + b.link + '" style="color:#1a6ef5;text-decoration:none;">' + b.title + '</a>' : b.title}
+      </td>
+      <td style="padding:12px 16px;border-bottom:1px solid #eef1f6;color:#5c6b7a;font-size:14px;">${b.county}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #eef1f6;color:#5c6b7a;font-size:14px;">${b.deadline || '—'}</td>
+    </tr>`).join('');
+
+  const html = `
+<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f5f7fa;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f7fa;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;">
+        <tr>
+          <td style="background:#0f1923;border-radius:12px 12px 0 0;padding:24px 32px;">
+            <div style="font-size:22px;font-weight:800;color:#fff;">ADZ<span style="color:#1a6ef5;">Solutions</span></div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:3px;letter-spacing:0.08em;text-transform:uppercase;">Automated Bid Monitor</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#1a6ef5;padding:14px 32px;">
+            <p style="margin:0;color:#fff;font-size:14px;">
+              <strong>${newBids.length} new bid${newBids.length > 1 ? 's have' : ' has'} been automatically detected</strong> matching ADZ Solutions' service categories.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;border-radius:0 0 12px 12px;overflow:hidden;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr style="background:#0f1923;">
+                <th style="padding:10px 16px;text-align:left;font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.08em;">Bid Title</th>
+                <th style="padding:10px 16px;text-align:left;font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.08em;">County</th>
+                <th style="padding:10px 16px;text-align:left;font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.08em;">Deadline</th>
+              </tr>
+              ${rows}
+            </table>
+            <div style="padding:20px 32px;border-top:1px solid #eef1f6;text-align:center;">
+              <a href="https://adzsolutionsgroup.com/tracker/login.html"
+                 style="display:inline-block;background:#1a6ef5;color:#fff;padding:11px 28px;border-radius:8px;text-decoration:none;font-weight:500;font-size:14px;">
+                Review in Bid Tracker →
+              </a>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 0;text-align:center;font-size:12px;color:#5c6b7a;">
+            ADZ Solutions LLC · 23 Milford Dr, Marlton, NJ · Automated Bid Monitor
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  const plain = 'ADZ Bid Scraper detected ' + newBids.length + ' new bid(s):\n\n' +
+    newBids.map(b => '• ' + b.title + ' (' + b.county + ')' + (b.deadline ? ' — Due: ' + b.deadline : '') + '\n  ' + (b.link || '')).join('\n\n') +
+    '\n\nLog in to review: https://adzsolutionsgroup.com/tracker/login.html';
+
+  TEAM_EMAILS.forEach(email => {
+    if (!email || email.startsWith('//')) return;
+    MailApp.sendEmail({ to: email, subject, body: plain, htmlBody: html });
+  });
+}
+
+// ============================================================
+//  INDIVIDUAL COUNTY SCRAPERS
+// ============================================================
+
+// ── GLOUCESTER COUNTY ─────────────────────────────────────────
+// CivicEngage platform — clean HTML bid listings
+function scrapeGloucester() {
+  const url  = 'https://www.gloucestercountynj.gov/Bids.aspx';
+  const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+  const bids = [];
+
+  // CivicEngage lists bids as links with bid numbers and titles
+  const pattern = /bids\.aspx\?bidID=(\d+)[^>]*?>([^<]+)<\/a>/gi;
+  let match;
+  while ((match = pattern.exec(html)) !== null) {
+    const bidId = match[1];
+    const title = match[2].trim();
+    if (!title || title.length < 5) continue;
+
+    // Extract closing date if present near this match
+    const snippet   = html.substring(html.indexOf(match[0]), html.indexOf(match[0]) + 400);
+    const dateMatch = snippet.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+
+    bids.push({
+      key:      'gloucester_' + bidId,
+      county:   'Gloucester',
+      title,
+      bidNum:   '',
+      deadline: dateMatch ? formatScraperDate(dateMatch[1]) : '',
+      link:     'https://www.gloucestercountynj.gov/bids.aspx?bidID=' + bidId,
+    });
+  }
+  return bids;
+}
+
+// ── UNION COUNTY ──────────────────────────────────────────────
+// WordPress site — bids listed as plain text with RFP numbers
+function scrapeUnion() {
+  const url  = 'https://ucnj.org/vendor-opportunities/rfqs-and-rfps/current/';
+  const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+  const bids = [];
+
+  // Union posts bids in bold with RFP numbers and opening dates
+  // Pattern: bold title followed by RFP # and date
+  const pattern = /<strong>([^<]{10,200})<\/strong>/gi;
+  let match;
+  const seen = new Set();
+
+  while ((match = pattern.exec(html)) !== null) {
+    const title = match[1].replace(/&amp;/g, '&').replace(/&#\d+;/g, '').trim();
+    if (!title || title.length < 10) continue;
+    if (seen.has(title)) continue;
+    seen.add(title);
+
+    // Look for RFP number near this match
+    const snippet  = html.substring(Math.max(0, match.index - 50), match.index + 500);
+    const rfpMatch = snippet.match(/RFP\s*#?\s*([\w-]+)/i);
+    const dateMatch = snippet.match(/(?:Opening|Due|Deadline)[^;]*?(\w+ \d{1,2},\s*\d{4})/i) ||
+                      snippet.match(/(\w+ \d{1,2},\s*\d{4})/);
+
+    bids.push({
+      key:      'union_' + title.substring(0, 40).replace(/\s+/g, '_').toLowerCase(),
+      county:   'Union',
+      title,
+      bidNum:   rfpMatch ? rfpMatch[0] : '',
+      deadline: dateMatch ? formatScraperDate(dateMatch[1]) : '',
+      link:     url,
+    });
+  }
+  return bids;
+}
+
+// ── SUSSEX COUNTY ─────────────────────────────────────────────
+// Simple HTML table — Reference ID, Advertise Date, Opening Date, Title
+function scrapeSussex() {
+  const url  = 'https://www.sussex.nj.us/cn/bids/';
+  const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+  const bids = [];
+
+  // Table rows: Reference ID | Advertise Date | Opening Date | Title | Dept
+  const rowPattern = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let row;
+  while ((row = rowPattern.exec(html)) !== null) {
+    const cells = [];
+    const cellPat = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    let cell;
+    while ((cell = cellPat.exec(row[1])) !== null) {
+      cells.push(cell[1].replace(/<[^>]+>/g, '').trim());
+    }
+    if (cells.length < 4) continue;
+    const refId   = cells[0];
+    const opening = cells[2];
+    const title   = cells[3];
+    if (!title || title.length < 5 || title === 'Title') continue;
+
+    bids.push({
+      key:      'sussex_' + refId.replace(/\s+/g, '_'),
+      county:   'Sussex',
+      title,
+      bidNum:   refId,
+      deadline: opening ? formatScraperDate(opening) : '',
+      link:     url,
+    });
+  }
+  return bids;
+}
+
+// ── PASSAIC COUNTY ────────────────────────────────────────────
+// Purchasing portal — current opportunities table visible without login
+function scrapePassaic() {
+  const url  = 'https://www.passaicbids.com/';
+  const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+  const bids = [];
+
+  // Table: # | Title | Type | Status | Due Date
+  const rowPattern = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let row;
+  while ((row = rowPattern.exec(html)) !== null) {
+    const cells = [];
+    const cellPat = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    let cell;
+    while ((cell = cellPat.exec(row[1])) !== null) {
+      cells.push(cell[1].replace(/<[^>]+>/g, '').trim());
+    }
+    if (cells.length < 3) continue;
+    const title   = cells[1];
+    const dueDate = cells[4] || '';
+    if (!title || title.length < 5 || title === 'Title') continue;
+
+    // Extract link if present
+    const linkMatch = row[1].match(/href="([^"]*bids\/view[^"]*)"/i);
+    const link      = linkMatch ? 'https://www.passaicbids.com' + linkMatch[1] : url;
+
+    bids.push({
+      key:      'passaic_' + title.substring(0, 40).replace(/\s+/g, '_').toLowerCase(),
+      county:   'Passaic',
+      title,
+      bidNum:   cells[0] || '',
+      deadline: dueDate ? formatScraperDate(dueDate) : '',
+      link,
+    });
+  }
+  return bids;
+}
+
+// ── CAMDEN COUNTY ─────────────────────────────────────────────
+// procurements.camdencounty.com — clean public HTML table
+function scrapeCamden() {
+  const url  = 'https://procurements.camdencounty.com/';
+  const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+  const bids = [];
+
+  // Table: # | Title | Entity | Description | Type | Status | Opening Date
+  const rowPattern = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let row;
+  while ((row = rowPattern.exec(html)) !== null) {
+    const cells = [];
+    const cellPat = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    let cell;
+    while ((cell = cellPat.exec(row[1])) !== null) {
+      cells.push(cell[1].replace(/<[^>]+>/g, '').trim());
+    }
+    if (cells.length < 5) continue;
+    const bidNum  = cells[0];
+    const title   = cells[1];
+    const status  = cells[5] || '';
+    const opening = cells[6] || '';
+    if (!title || title.length < 5 || title === 'Title') continue;
+    if (status.toLowerCase() === 'closed') continue;
+
+    // Extract link
+    const linkMatch = row[1].match(/href="(\/procurements\/\d+)"/i);
+    const link      = linkMatch ? 'https://procurements.camdencounty.com' + linkMatch[1] : url;
+
+    bids.push({
+      key:      'camden_' + (bidNum || title.substring(0, 30)).replace(/\s+/g, '_').toLowerCase(),
+      county:   'Camden',
+      title,
+      bidNum,
+      deadline: opening ? formatScraperDate(opening) : '',
+      link,
+    });
+  }
+  return bids;
+}
+
+// ── SALEM COUNTY ──────────────────────────────────────────────
+// salempurchasing.org — clean public HTML table
+function scrapeSalem() {
+  const url  = 'https://salempurchasing.org/';
+  const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+  const bids = [];
+
+  // Table: # | Title | Date Issued | Due Date
+  const rowPattern = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let row;
+  while ((row = rowPattern.exec(html)) !== null) {
+    const cells = [];
+    const cellPat = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    let cell;
+    while ((cell = cellPat.exec(row[1])) !== null) {
+      cells.push(cell[1].replace(/<[^>]+>/g, '').trim());
+    }
+    if (cells.length < 3) continue;
+    const bidNum  = cells[0];
+    const title   = cells[1];
+    const dueDate = cells[3] || '';
+    if (!title || title.length < 5 || title === 'Title') continue;
+
+    // Extract link
+    const linkMatch = row[1].match(/href="([^"]*bids\/view[^"]*)"/i);
+    const link      = linkMatch ? 'https://salempurchasing.org' + linkMatch[1] : url;
+
+    bids.push({
+      key:      'salem_' + (bidNum || title.substring(0,30)).replace(/\s+/g,'_').toLowerCase(),
+      county:   'Salem',
+      title,
+      bidNum,
+      deadline: dueDate ? formatScraperDate(dueDate) : '',
+      link,
+    });
+  }
+  return bids;
+}
+
+// ── DATE FORMATTER FOR SCRAPER ────────────────────────────────
+// Converts various date formats to YYYY-MM-DD for the sheet
+function formatScraperDate(raw) {
+  if (!raw) return '';
+  try {
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  } catch { return ''; }
+}
+
+// ============================================================
+//  SOURCING
+//  Supplier quote comparison & landed-cost economics for
+//  private-label products (e.g. the Amazon reseller line).
+//  Mirrors the Bids CRUD pattern above — same auth, same
+//  COLUMNS + row<->object convention. Both sheets below are
+//  created automatically on first use, same as ScraperResults.
+// ============================================================
+
+const SOURCING_SHEET_NAME = 'SourcingSuppliers';
+const SOURCING_COLUMNS = [
+  'id','name','status','leadTimeDays','moq','sampleCost','sampleShipping',
+  'unitPrice100','unitPrice300','unitPrice500','ddpPrice','freightDutyEstimate',
+  'fbaFulfillmentFee','cartonL','cartonW','cartonH','grossWeightLb','netWeightLb',
+  'material','boardThickness','privateLabel','adjustableShelves','antiTip',
+  'reinforced','improvedPackaging','mediaUrl','notes','updatedAt'
+];
+const SOURCING_BOOLEAN_COLUMNS = ['privateLabel','adjustableShelves','antiTip','reinforced','improvedPackaging'];
+const SOURCING_STRING_COLUMNS  = ['id','name','status','material','boardThickness','mediaUrl','notes','updatedAt'];
+
+const SOURCING_ASSUMPTIONS_SHEET_NAME = 'SourcingAssumptions';
+const SOURCING_ASSUMPTIONS_COLUMNS = ['referralFeePct','otherPerUnitCost','storageFeePerCuFtMonth','targetPrice1','targetPrice2','targetPrice3'];
+
+function getSourcingSheet() {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  let   sheet = ss.getSheetByName(SOURCING_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SOURCING_SHEET_NAME);
+    sheet.appendRow(SOURCING_COLUMNS);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, SOURCING_COLUMNS.length)
+         .setBackground('#0f1923')
+         .setFontColor('#ffffff')
+         .setFontWeight('bold');
+  }
+  return sheet;
+}
+
+function getSourcingAssumptionsSheet() {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  let   sheet = ss.getSheetByName(SOURCING_ASSUMPTIONS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SOURCING_ASSUMPTIONS_SHEET_NAME);
+    sheet.appendRow(SOURCING_ASSUMPTIONS_COLUMNS);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// Unlike rowToObj() above (which keeps everything as strings — fine
+// for the Bids sheet, since tracker.js only ever displays those
+// fields) sourcing values feed real arithmetic in tracker.js, so
+// blanks become actual `null` and numeric columns become numbers.
+function sourcingRowToObj(row) {
+  const obj = {};
+  SOURCING_COLUMNS.forEach((col, i) => {
+    let v = row[i];
+    if (v === '' || v === undefined) { obj[col] = null; return; }
+    if (SOURCING_BOOLEAN_COLUMNS.indexOf(col) !== -1) { obj[col] = (v === true || v === 'TRUE' || v === 'true'); return; }
+    if (SOURCING_STRING_COLUMNS.indexOf(col) !== -1) { obj[col] = String(v); return; }
+    const n = Number(v);
+    obj[col] = isNaN(n) ? null : n;
+  });
+  return obj;
+}
+
+function sourcingObjToRow(supplier) {
+  return SOURCING_COLUMNS.map(col => {
+    const v = supplier[col];
+    return v === undefined || v === null ? '' : v;
+  });
+}
+
+function getSourcingSuppliers() {
+  const sheet = getSourcingSheet();
+  const data  = sheet.getDataRange().getValues();
+  if (data.length <= 1) return { suppliers: [] };
+
+  const suppliers = data.slice(1)
+    .filter(row => row[0] && row[0] !== '')
+    .map(sourcingRowToObj);
+
+  return { suppliers };
+}
+
+function addSourcingSupplier(supplier) {
+  if (!supplier || !supplier.id) throw new Error('Invalid supplier data');
+  const sheet = getSourcingSheet();
+  supplier.updatedAt = new Date().toISOString();
+  sheet.appendRow(sourcingObjToRow(supplier));
+  return { success: true, id: supplier.id };
+}
+
+function updateSourcingSupplier(supplier) {
+  if (!supplier || !supplier.id) throw new Error('Invalid supplier data');
+  const sheet = getSourcingSheet();
+  const data  = sheet.getDataRange().getValues();
+  const idCol = SOURCING_COLUMNS.indexOf('id');
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idCol]) === String(supplier.id)) {
+      supplier.updatedAt = new Date().toISOString();
+      sheet.getRange(i + 1, 1, 1, SOURCING_COLUMNS.length).setValues([sourcingObjToRow(supplier)]);
+      return { success: true };
+    }
+  }
+  throw new Error('Supplier not found: ' + supplier.id);
+}
+
+function deleteSourcingSupplier(id) {
+  if (!id) throw new Error('No ID provided');
+  const sheet = getSourcingSheet();
+  const data  = sheet.getDataRange().getValues();
+  const idCol = SOURCING_COLUMNS.indexOf('id');
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idCol]) === String(id)) {
+      sheet.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: true }; // already gone — not an error
+}
+
+function getSourcingAssumptions() {
+  const sheet    = getSourcingAssumptionsSheet();
+  const data     = sheet.getDataRange().getValues();
+  const defaults = { referralFeePct: 15, otherPerUnitCost: 0, storageFeePerCuFtMonth: null, targetPrices: [99.99, 109.99, 119.99] };
+  if (data.length < 2) return { assumptions: defaults };
+
+  const headers = data[0];
+  const row     = data[1];
+  const get = (name) => {
+    const v = row[headers.indexOf(name)];
+    if (v === '' || v === undefined) return null;
+    const n = Number(v);
+    return isNaN(n) ? null : n;
+  };
+
+  return {
+    assumptions: {
+      referralFeePct: get('referralFeePct'),
+      otherPerUnitCost: get('otherPerUnitCost'),
+      storageFeePerCuFtMonth: get('storageFeePerCuFtMonth'),
+      targetPrices: [get('targetPrice1'), get('targetPrice2'), get('targetPrice3')]
+    }
+  };
+}
+
+function updateSourcingAssumptions(assumptions) {
+  const sheet  = getSourcingAssumptionsSheet();
+  const prices = assumptions.targetPrices || [];
+  const row = [
+    assumptions.referralFeePct, assumptions.otherPerUnitCost, assumptions.storageFeePerCuFtMonth,
+    prices[0], prices[1], prices[2]
+  ].map(v => v === undefined || v === null ? '' : v);
+
+  if (sheet.getLastRow() < 2) {
+    sheet.appendRow(row);
+  } else {
+    sheet.getRange(2, 1, 1, row.length).setValues([row]);
+  }
+  return { success: true };
+}
+
+// ── DATE HELPER ───────────────────────────────────────────────
+function formatDate(dl) {
+  if (!dl) return '—';
+  const d = new Date(dl + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ── RESPONSE HELPERS ──────────────────────────────────────────
+function respond(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function respondError(msg) {
+  return ContentService
+    .createTextOutput(JSON.stringify({ error: msg }))
+    .setMimeType(ContentService.MimeType.JSON);
+}

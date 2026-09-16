@@ -176,7 +176,7 @@
   .stat-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
   .stat-card.green::before { background: linear-gradient(90deg,var(--green),#4ade80); }
   .stat-card.amber::before { background: linear-gradient(90deg,var(--amber),#fbbf24); }
-  .stat-card.purple::before { background: linear-gradient(90deg,var(--purple),#a78bfa); }
+  .stat-card.red::before { background: linear-gradient(90deg,var(--red),#f87171); }
   .stat-label { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.45rem; }
   .stat-value { font-family: 'Syne', sans-serif; font-size: 1.9rem; font-weight: 800; color: var(--text); line-height: 1; letter-spacing: -0.03em; }
   .stat-sub { font-size: 0.7rem; color: var(--muted); margin-top: 3px; font-weight: 300; }
@@ -203,6 +203,7 @@
 
   /* ── TABLE ── */
   .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+  .table-card.scroll-x { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
   thead { background: var(--text); }
   th { padding: 11px 16px; text-align: left; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
@@ -215,8 +216,6 @@
   .td-title a:hover { text-decoration: underline; }
   .td-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; font-weight: 300; }
   .td-muted { font-size: 0.82rem; color: var(--muted); font-weight: 300; }
-  .deadline-soon { color: var(--amber); font-weight: 600; }
-  .deadline-past { color: var(--red); text-decoration: line-through; opacity: 0.7; }
   .cat-chip { background: var(--surface2); color: var(--muted); font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
   .actions-cell { display: flex; gap: 6px; }
 
@@ -227,12 +226,10 @@
     font-size: 0.7rem; font-weight: 500; letter-spacing: 0.04em; white-space: nowrap;
   }
   .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-  .badge-new { background: var(--accent-light); color: var(--accent); }
-  .badge-reviewing { background: var(--purple-bg); color: var(--purple); }
+  .badge-drafting { background: var(--accent-light); color: var(--accent); }
   .badge-submitted { background: var(--amber-bg); color: var(--amber); }
   .badge-won { background: var(--green-bg); color: var(--green); }
   .badge-lost { background: var(--red-bg); color: var(--red); }
-  .badge-passed { background: var(--surface2); color: var(--muted); }
 
   /* ── EMPTY STATE ── */
   .empty-state { padding: 60px 20px; text-align: center; }
@@ -275,6 +272,14 @@
   .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,110,245,0.1); background: var(--surface); }
   .form-group textarea { min-height: 80px; }
   .form-group select { appearance: none; cursor: pointer; }
+  .field-group-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-top: 0.5rem; }
+  .checkbox-row { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+  .checkbox-row label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--text); font-weight: 400; cursor: pointer; }
+
+  /* ── SOURCING ── */
+  .assumptions-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; box-shadow: var(--shadow); display: flex; gap: 1.25rem; flex-wrap: wrap; }
+  .assumptions-bar .form-group { min-width: 130px; }
+  .assumptions-bar .form-group.wide { min-width: 260px; }
 
   /* ── DIRECTORY ── */
   .dir-hero { background: var(--text); border-radius: 16px; padding: 2rem 2.5rem; margin-bottom: 1.75rem; display: flex; align-items: center; gap: 1.5rem; box-shadow: var(--shadow-lg); position: relative; overflow: hidden; }
@@ -420,6 +425,7 @@
 <div class="tabs-bar">
   <div class="tab active" onclick="switchTab('tracker',this)">Bid Tracker</div>
   <div class="tab" onclick="switchTab('directory',this)">County Directory</div>
+  <div class="tab" onclick="switchTab('sourcing',this)">Sourcing</div>
 </div>
 
 <main>
@@ -429,13 +435,12 @@
     <div class="stats-row" id="statsRow"></div>
     <div class="toolbar">
       <div class="toolbar-left">
-        <input class="filter-input" id="searchInput" type="text" placeholder="🔍  Search bids, counties, contacts..." oninput="renderTable()">
+        <input class="filter-input" id="searchInput" type="text" placeholder="🔍  Search bids, counties, bid numbers..." oninput="renderTable()">
         <select class="filter-select" id="filterCounty" onchange="renderTable()"><option value="">All Counties</option></select>
         <select class="filter-select" id="filterStatus" onchange="renderTable()">
           <option value="">All Statuses</option>
-          <option value="new">New</option><option value="reviewing">Reviewing</option>
-          <option value="submitted">Submitted</option><option value="won">Won</option>
-          <option value="lost">Lost</option><option value="passed">Passed</option>
+          <option value="drafting">Drafting</option><option value="submitted">Submitted</option>
+          <option value="won">Won</option><option value="lost">Lost</option>
         </select>
         <select class="filter-select" id="filterCat" onchange="renderTable()">
           <option value="">All Categories</option>
@@ -448,8 +453,7 @@
       <table>
         <thead>
           <tr>
-            <th>Bid / RFP</th><th>County</th><th>Category</th>
-            <th>Deadline</th><th>Est. Value</th><th>Assigned</th><th>Status</th><th></th>
+            <th>Bid / RFP</th><th>County</th><th>Category</th><th>Status</th><th></th>
           </tr>
         </thead>
         <tbody id="bidTableBody"></tbody>
@@ -473,6 +477,30 @@
       </div>
     </div>
     <div class="county-grid" id="countyGrid"></div>
+  </div>
+
+  <!-- SOURCING -->
+  <div id="sourcing" class="section">
+    <p class="section-tag">Sourcing</p>
+    <div class="assumptions-bar" id="sourcingAssumptions"></div>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <span style="font-size:0.85rem;color:var(--muted);">Compare supplier quotes against Amazon FBA landed-cost economics.</span>
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="openSupplierModal()">+ Add Supplier</button>
+    </div>
+    <div class="table-card scroll-x">
+      <table style="min-width:900px;">
+        <thead><tr id="sourcingHead"></tr></thead>
+        <tbody id="sourcingTableBody"></tbody>
+      </table>
+      <div id="sourcingEmptyState" class="empty-state" style="display:none;">
+        <div class="empty-icon">🧮</div>
+        <h3>No suppliers yet</h3>
+        <p>Add your first supplier quote to start comparing landed cost against your target retail price.</p>
+        <button class="btn btn-primary" onclick="openSupplierModal()">+ Add First Supplier</button>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -514,25 +542,87 @@
           </select>
         </div>
         <div class="form-group"><label>Bid / RFP Number</label><input type="text" id="fBidNum" placeholder="e.g. RFP-26-005"></div>
-        <div class="form-group"><label>Submission Deadline</label><input type="date" id="fDeadline"></div>
-        <div class="form-group"><label>Estimated Value ($)</label><input type="text" id="fValue" placeholder="e.g. 150,000"></div>
         <div class="form-group">
           <label>Status</label>
           <select id="fStatus">
-            <option value="new">New</option><option value="reviewing">Reviewing</option>
-            <option value="submitted">Submitted</option><option value="won">Won</option>
-            <option value="lost">Lost</option><option value="passed">Passed</option>
+            <option value="drafting">Drafting</option><option value="submitted">Submitted</option>
+            <option value="won">Won</option><option value="lost">Lost</option>
           </select>
         </div>
-        <div class="form-group"><label>Assigned To</label><input type="text" id="fAssigned" placeholder="Team member name"></div>
-        <div class="form-group full"><label>Contact Name & Info</label><input type="text" id="fContact" placeholder="e.g. Jane Smith — jane@county.gov — (609) 555-0123"></div>
-        <div class="form-group full"><label>Portal / Bid Link</label><input type="url" id="fLink" placeholder="https://..."></div>
         <div class="form-group full"><label>Notes</label><textarea id="fNotes" placeholder="Requirements, provisions, key details..."></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" id="saveBtn" onclick="saveBid()">Save Bid</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPLIER MODAL -->
+<div class="modal-overlay" id="supplierModalOverlay" onclick="handleSupplierOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-tag">Sourcing</div>
+        <div class="modal-title" id="supplierModalTitle">Add Supplier</div>
+      </div>
+      <button class="modal-close" onclick="closeSupplierModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Supplier Name *</label><input type="text" id="sName" placeholder="e.g. Hebei Nanyang"></div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="sStatus">
+            <option value="inquiry_sent">Inquiry Sent</option>
+            <option value="quote_received">Quote Received</option>
+            <option value="sample_ordered">Sample Ordered</option>
+            <option value="sample_received">Sample Received</option>
+            <option value="selected">Selected</option>
+            <option value="passed">Passed</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Lead Time (days)</label><input type="number" id="sLeadTime" placeholder="e.g. 30"></div>
+
+        <div class="form-group full field-group-label">Pricing</div>
+        <div class="form-group"><label>MOQ (units)</label><input type="number" id="sMoq"></div>
+        <div class="form-group"><label>Sample Cost ($)</label><input type="number" step="0.01" id="sSampleCost"></div>
+        <div class="form-group"><label>Sample Shipping ($)</label><input type="number" step="0.01" id="sSampleShipping"></div>
+        <div class="form-group"><label>Unit Price @ 100 ($)</label><input type="number" step="0.01" id="sUnit100"></div>
+        <div class="form-group"><label>Unit Price @ 300 ($)</label><input type="number" step="0.01" id="sUnit300"></div>
+        <div class="form-group"><label>Unit Price @ 500 ($)</label><input type="number" step="0.01" id="sUnit500"></div>
+        <div class="form-group"><label>DDP Price to US ($)</label><input type="number" step="0.01" id="sDdp"></div>
+        <div class="form-group"><label>FOB Freight/Duty Est. ($)</label><input type="number" step="0.01" id="sFreightEst"></div>
+        <div class="form-group"><label>FBA Fee — This Box ($)</label><input type="number" step="0.01" id="sFbaFee"></div>
+
+        <div class="form-group full field-group-label">Carton & Weight</div>
+        <div class="form-group"><label>Carton L (in)</label><input type="number" step="0.1" id="sCartonL"></div>
+        <div class="form-group"><label>Carton W (in)</label><input type="number" step="0.1" id="sCartonW"></div>
+        <div class="form-group"><label>Carton H (in)</label><input type="number" step="0.1" id="sCartonH"></div>
+        <div class="form-group"><label>Gross Weight (lb)</label><input type="number" step="0.1" id="sGrossWeight"></div>
+        <div class="form-group"><label>Net Weight (lb)</label><input type="number" step="0.1" id="sNetWeight"></div>
+        <div class="form-group"><label>Board Thickness</label><input type="text" id="sBoardThickness" placeholder="e.g. 15mm"></div>
+
+        <div class="form-group full field-group-label">Materials & Customization</div>
+        <div class="form-group full"><label>Material</label><input type="text" id="sMaterial" placeholder="e.g. MDF, engineered wood"></div>
+        <div class="form-group full">
+          <label>Customization</label>
+          <div class="checkbox-row">
+            <label><input type="checkbox" id="sPrivateLabel"> Private label</label>
+            <label><input type="checkbox" id="sAdjustableShelves"> Adjustable shelves</label>
+            <label><input type="checkbox" id="sAntiTip"> Anti-tip hardware</label>
+            <label><input type="checkbox" id="sReinforced"> Reinforced structure</label>
+            <label><input type="checkbox" id="sImprovedPackaging"> Improved packaging</label>
+          </div>
+        </div>
+        <div class="form-group full"><label>Media / Photos Link</label><input type="url" id="sMediaUrl" placeholder="https://..."></div>
+        <div class="form-group full"><label>Notes</label><textarea id="sNotes" placeholder="Factory responsiveness, negotiation room, red flags..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSupplierModal()">Cancel</button>
+      <button class="btn btn-primary" id="supplierSaveBtn" onclick="saveSupplier()">Save Supplier</button>
     </div>
   </div>
 </div>

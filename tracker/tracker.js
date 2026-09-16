@@ -43,6 +43,7 @@ function initApp() {
   populateCountyFilter();
   loadBids();
   loadScrapedBids();
+  loadSourcing();
 }
 
 // ── API HELPERS ──
@@ -131,42 +132,27 @@ function switchTab(id, el) {
 // ── STATS ──
 function renderStats() {
   const total = bids.length;
-  const active = bids.filter(b => ['new','reviewing','submitted'].includes(b.status)).length;
+  const drafting = bids.filter(b => b.status === 'drafting').length;
+  const submitted = bids.filter(b => b.status === 'submitted').length;
   const won = bids.filter(b => b.status === 'won').length;
-  const soon = bids.filter(b => {
-    if (!b.deadline) return false;
-    const d = (new Date(b.deadline) - new Date()) / 86400000;
-    return d >= 0 && d <= 14;
-  }).length;
-  const val = bids.reduce((s, b) => {
-    const v = parseFloat((b.value || '').replace(/[^0-9.]/g,''));
-    return s + (isNaN(v) ? 0 : v);
-  }, 0);
-  const fmtVal = val >= 1000000 ? '$'+(val/1000000).toFixed(1)+'M' : val >= 1000 ? '$'+Math.round(val/1000)+'K' : val > 0 ? '$'+val : '—';
+  const lost = bids.filter(b => b.status === 'lost').length;
 
   document.getElementById('statsRow').innerHTML = `
     <div class="stat-card"><div class="stat-label">Total Bids</div><div class="stat-value">${total}</div><div class="stat-sub">tracked opportunities</div></div>
-    <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value">${active}</div><div class="stat-sub">in progress</div></div>
-    <div class="stat-card amber"><div class="stat-label">Due Soon</div><div class="stat-value">${soon}</div><div class="stat-sub">within 14 days</div></div>
+    <div class="stat-card"><div class="stat-label">Drafting</div><div class="stat-value">${drafting}</div><div class="stat-sub">not yet submitted</div></div>
+    <div class="stat-card amber"><div class="stat-label">Submitted</div><div class="stat-value">${submitted}</div><div class="stat-sub">awaiting decision</div></div>
     <div class="stat-card green"><div class="stat-label">Won</div><div class="stat-value">${won}</div><div class="stat-sub">contracts awarded</div></div>
-    <div class="stat-card purple"><div class="stat-label">Pipeline Value</div><div class="stat-value">${fmtVal}</div><div class="stat-sub">estimated total</div></div>
+    <div class="stat-card red"><div class="stat-label">Lost</div><div class="stat-value">${lost}</div><div class="stat-sub">not awarded</div></div>
   `;
 }
 
 // ── TABLE ──
-function dlClass(dl) {
-  if (!dl) return '';
-  const d = (new Date(dl) - new Date()) / 86400000;
-  if (d < 0) return 'deadline-past';
-  if (d <= 14) return 'deadline-soon';
-  return '';
-}
 function fmtDate(dl) {
   if (!dl) return '—';
   return new Date(dl + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 }
 function statusBadge(s) {
-  const map = {new:'New',reviewing:'Reviewing',submitted:'Submitted',won:'Won',lost:'Lost',passed:'Passed'};
+  const map = {drafting:'Drafting',submitted:'Submitted',won:'Won',lost:'Lost'};
   return `<span class="badge badge-${s}">${map[s]||s}</span>`;
 }
 
@@ -180,7 +166,7 @@ function renderTable() {
     if (co && b.county !== co) return false;
     if (st && b.status !== st) return false;
     if (ca && b.category !== ca) return false;
-    if (q && !`${b.title} ${b.county} ${b.contact} ${b.assigned} ${b.bidNum}`.toLowerCase().includes(q)) return false;
+    if (q && !`${b.title} ${b.county} ${b.bidNum}`.toLowerCase().includes(q)) return false;
     return true;
   });
 
@@ -198,9 +184,6 @@ function renderTable() {
       </td>
       <td class="td-muted">${b.county||'—'}</td>
       <td>${b.category ? `<span class="cat-chip">${b.category}</span>` : '—'}</td>
-      <td><span class="${dlClass(b.deadline)}">${fmtDate(b.deadline)}</span></td>
-      <td style="font-weight:500;font-size:0.85rem;">${b.value ? '$'+b.value : '—'}</td>
-      <td class="td-muted">${b.assigned||'—'}</td>
       <td>${statusBadge(b.status)}</td>
       <td>
         <div class="actions-cell">
@@ -226,7 +209,7 @@ function populateCountyFilter() {
 function renderDirectory() {
   const activeBidCounties = new Set(
     bids
-      .filter(b => ['new','reviewing','submitted'].includes(b.status))
+      .filter(b => ['drafting','submitted'].includes(b.status))
       .map(b => b.county)
   );
 
@@ -326,12 +309,7 @@ function openModal(id = null) {
   document.getElementById('fCounty').value   = b?.county   || '';
   document.getElementById('fCategory').value = b?.category || '';
   document.getElementById('fBidNum').value   = b?.bidNum   || '';
-  document.getElementById('fDeadline').value = b?.deadline || '';
-  document.getElementById('fValue').value    = b?.value    || '';
-  document.getElementById('fStatus').value   = b?.status   || 'new';
-  document.getElementById('fAssigned').value = b?.assigned || '';
-  document.getElementById('fContact').value  = b?.contact  || '';
-  document.getElementById('fLink').value     = b?.link     || '';
+  document.getElementById('fStatus').value   = b?.status   || 'drafting';
   document.getElementById('fNotes').value    = b?.notes    || '';
   document.getElementById('modalOverlay').classList.add('open');
 }
@@ -354,12 +332,7 @@ async function saveBid() {
     title, county,
     category: document.getElementById('fCategory').value,
     bidNum:   document.getElementById('fBidNum').value.trim(),
-    deadline: document.getElementById('fDeadline').value,
-    value:    document.getElementById('fValue').value.trim(),
     status:   document.getElementById('fStatus').value,
-    assigned: document.getElementById('fAssigned').value.trim(),
-    contact:  document.getElementById('fContact').value.trim(),
-    link:     document.getElementById('fLink').value.trim(),
     notes:    document.getElementById('fNotes').value.trim(),
   };
 
@@ -406,9 +379,9 @@ async function deleteBid(id) {
 // ── EXPORT CSV ──
 function exportCSV() {
   if (!bids.length) { showToast('No bids to export.', 'error'); return; }
-  const headers = ['Title','County','Category','Bid Number','Deadline','Est. Value','Status','Assigned To','Contact','Portal Link','Notes'];
+  const headers = ['Title','County','Category','Bid Number','Status','Notes'];
   const rows = bids.map(b =>
-    [b.title,b.county,b.category,b.bidNum,b.deadline,b.value,b.status,b.assigned,b.contact,b.link,b.notes]
+    [b.title,b.county,b.category,b.bidNum,b.status,b.notes]
     .map(v => `"${(v||'').replace(/"/g,'""')}"`)
   );
   const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -531,4 +504,256 @@ function showToast(msg, type = '') {
   t.className = 'toast show' + (type ? ' ' + type : '');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ============================================================
+//  SOURCING — supplier quote comparison & landed-cost economics
+// ============================================================
+
+let sourcingSuppliers = [];
+let sourcingAssumptions = { referralFeePct: 15, otherPerUnitCost: 0, storageFeePerCuFtMonth: null, targetPrices: [99.99, 109.99, 119.99] };
+let editingSupplierId = null;
+let isSavingSupplier = false;
+
+const SOURCING_STATUS_MAP = {
+  inquiry_sent: 'Inquiry Sent', quote_received: 'Quote Received', sample_ordered: 'Sample Ordered',
+  sample_received: 'Sample Received', selected: 'Selected', passed: 'Passed'
+};
+
+// ── LOAD ──
+async function loadSourcing() {
+  try {
+    const [sData, aData] = await Promise.all([apiCall('getSourcingSuppliers'), apiCall('getSourcingAssumptions')]);
+    sourcingSuppliers = sData.suppliers || [];
+    if (aData.assumptions) sourcingAssumptions = { ...sourcingAssumptions, ...aData.assumptions };
+    renderSourcingAssumptions();
+    renderSourcingTable();
+  } catch (e) {
+    console.error('Could not load sourcing data:', e);
+  }
+}
+
+// ── ECONOMICS ──
+function landedCost(s) {
+  if (s.ddpPrice != null) return { value: s.ddpPrice, basis: 'ddp' };
+  const fob = s.unitPrice300 != null ? s.unitPrice300 : (s.unitPrice500 != null ? s.unitPrice500 : s.unitPrice100);
+  if (fob == null) return { value: null, basis: 'none' };
+  return { value: fob + (s.freightDutyEstimate || 0), basis: 'fob' };
+}
+
+function economicsAt(s, price, assumptions) {
+  const lc = landedCost(s);
+  if (lc.value == null) return null;
+  const referralFee = price * (assumptions.referralFeePct || 0) / 100;
+  const otherCost = assumptions.otherPerUnitCost || 0;
+  if (s.fbaFulfillmentFee == null) return { incomplete: true };
+  const netProfit = price - lc.value - referralFee - s.fbaFulfillmentFee - otherCost;
+  const marginPct = (netProfit / price) * 100;
+  return { landed: lc.value, referralFee, fbaFee: s.fbaFulfillmentFee, otherCost, netProfit, marginPct, basis: lc.basis };
+}
+
+function viabilityChip(e) {
+  if (!e) return '<span class="badge" style="background:var(--surface2);color:var(--muted);">Need data</span>';
+  if (e.incomplete) return '<span class="badge" style="background:var(--surface2);color:var(--muted);">Need FBA fee</span>';
+  if (e.marginPct >= 20) return `<span class="badge badge-won">Solid · ${e.marginPct.toFixed(1)}%</span>`;
+  if (e.marginPct >= 10) return `<span class="badge badge-submitted">Thin · ${e.marginPct.toFixed(1)}%</span>`;
+  return `<span class="badge badge-lost">Unviable · ${e.marginPct.toFixed(1)}%</span>`;
+}
+
+function moneyFmt(n) {
+  return n == null || isNaN(n) ? '—' : '$' + Number(n).toFixed(2);
+}
+
+function sourcingStatusBadge(v) {
+  const cls = v === 'selected' ? 'badge-won' : v === 'passed' ? 'badge-lost'
+    : (v === 'sample_ordered' || v === 'sample_received') ? 'badge-submitted' : 'badge-drafting';
+  return `<span class="badge ${cls}">${SOURCING_STATUS_MAP[v] || v}</span>`;
+}
+
+// ── ASSUMPTIONS BAR ──
+function renderSourcingAssumptions() {
+  const a = sourcingAssumptions;
+  const p = a.targetPrices || [99.99, 109.99, 119.99];
+  document.getElementById('sourcingAssumptions').innerHTML = `
+    <div class="form-group"><label>Referral Fee %</label><input type="number" step="0.1" value="${a.referralFeePct ?? ''}" onchange="updateSourcingAssumption('referralFeePct', this.value)"></div>
+    <div class="form-group"><label>Other Cost / Unit ($)</label><input type="number" step="0.01" value="${a.otherPerUnitCost ?? ''}" onchange="updateSourcingAssumption('otherPerUnitCost', this.value)"></div>
+    <div class="form-group"><label>Storage $ / cu ft / mo</label><input type="number" step="0.01" value="${a.storageFeePerCuFtMonth ?? ''}" onchange="updateSourcingAssumption('storageFeePerCuFtMonth', this.value)"></div>
+    <div class="form-group wide"><label>Target Retail Prices ($)</label>
+      <div style="display:flex;gap:8px;">
+        <input type="number" step="0.01" value="${p[0] ?? ''}" onchange="updateSourcingPrice(0, this.value)">
+        <input type="number" step="0.01" value="${p[1] ?? ''}" onchange="updateSourcingPrice(1, this.value)">
+        <input type="number" step="0.01" value="${p[2] ?? ''}" onchange="updateSourcingPrice(2, this.value)">
+      </div>
+    </div>
+  `;
+}
+
+async function updateSourcingAssumption(key, val) {
+  sourcingAssumptions[key] = val === '' ? null : parseFloat(val);
+  renderSourcingTable();
+  try { await apiCall('updateSourcingAssumptions', { assumptions: sourcingAssumptions }); }
+  catch (e) { showToast('Failed to save assumptions.', 'error'); }
+}
+
+async function updateSourcingPrice(idx, val) {
+  const prices = (sourcingAssumptions.targetPrices || [99.99, 109.99, 119.99]).slice();
+  prices[idx] = val === '' ? null : parseFloat(val);
+  sourcingAssumptions.targetPrices = prices;
+  renderSourcingTable();
+  try { await apiCall('updateSourcingAssumptions', { assumptions: sourcingAssumptions }); }
+  catch (e) { showToast('Failed to save assumptions.', 'error'); }
+}
+
+// ── TABLE ──
+function renderSourcingTable() {
+  const prices = sourcingAssumptions.targetPrices || [99.99, 109.99, 119.99];
+  document.getElementById('sourcingHead').innerHTML =
+    `<th>Supplier</th><th>Status</th><th>MOQ</th><th>Landed Cost</th>` +
+    prices.map(p => `<th>Margin @ $${p}</th>`).join('') +
+    `<th>Lead Time</th><th></th>`;
+
+  const tbody = document.getElementById('sourcingTableBody');
+  const empty = document.getElementById('sourcingEmptyState');
+  if (!sourcingSuppliers.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  const rows = sourcingSuppliers.slice().sort((a, b) => {
+    const ea = economicsAt(a, prices[1], sourcingAssumptions);
+    const eb = economicsAt(b, prices[1], sourcingAssumptions);
+    const ka = ea && !ea.incomplete ? ea.marginPct : -9999;
+    const kb = eb && !eb.incomplete ? eb.marginPct : -9999;
+    return kb - ka;
+  });
+
+  tbody.innerHTML = rows.map(s => {
+    const lc = landedCost(s);
+    return `<tr>
+      <td class="td-title">${s.name || 'Untitled supplier'}</td>
+      <td>${sourcingStatusBadge(s.status)}</td>
+      <td class="td-muted">${s.moq != null ? s.moq : '—'}</td>
+      <td style="font-weight:500;font-size:0.85rem;">${moneyFmt(lc.value)}${lc.basis === 'fob' ? ' <span class="cat-chip" title="FOB + freight/duty estimate — no DDP yet">FOB est.</span>' : ''}</td>
+      ${prices.map(p => `<td>${viabilityChip(economicsAt(s, p, sourcingAssumptions))}</td>`).join('')}
+      <td class="td-muted">${s.leadTimeDays != null ? s.leadTimeDays + 'd' : '—'}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn btn-ghost btn-sm" onclick="openSupplierModal('${s.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSupplier('${s.id}')">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── MODAL ──
+function openSupplierModal(id = null) {
+  editingSupplierId = id;
+  const s = id ? sourcingSuppliers.find(x => x.id === id) : null;
+  document.getElementById('supplierModalTitle').textContent = id ? 'Edit Supplier' : 'Add Supplier';
+  document.getElementById('sName').value            = s?.name            || '';
+  document.getElementById('sStatus').value          = s?.status          || 'inquiry_sent';
+  document.getElementById('sLeadTime').value        = s?.leadTimeDays    ?? '';
+  document.getElementById('sMoq').value             = s?.moq             ?? '';
+  document.getElementById('sSampleCost').value      = s?.sampleCost      ?? '';
+  document.getElementById('sSampleShipping').value  = s?.sampleShipping  ?? '';
+  document.getElementById('sUnit100').value         = s?.unitPrice100    ?? '';
+  document.getElementById('sUnit300').value         = s?.unitPrice300    ?? '';
+  document.getElementById('sUnit500').value         = s?.unitPrice500    ?? '';
+  document.getElementById('sDdp').value             = s?.ddpPrice        ?? '';
+  document.getElementById('sFreightEst').value      = s?.freightDutyEstimate ?? '';
+  document.getElementById('sFbaFee').value          = s?.fbaFulfillmentFee  ?? '';
+  document.getElementById('sCartonL').value         = s?.cartonL         ?? '';
+  document.getElementById('sCartonW').value         = s?.cartonW         ?? '';
+  document.getElementById('sCartonH').value         = s?.cartonH         ?? '';
+  document.getElementById('sGrossWeight').value     = s?.grossWeightLb   ?? '';
+  document.getElementById('sNetWeight').value       = s?.netWeightLb     ?? '';
+  document.getElementById('sMaterial').value        = s?.material        || '';
+  document.getElementById('sBoardThickness').value  = s?.boardThickness  || '';
+  document.getElementById('sPrivateLabel').checked      = !!s?.privateLabel;
+  document.getElementById('sAdjustableShelves').checked = !!s?.adjustableShelves;
+  document.getElementById('sAntiTip').checked           = !!s?.antiTip;
+  document.getElementById('sReinforced').checked         = !!s?.reinforced;
+  document.getElementById('sImprovedPackaging').checked  = !!s?.improvedPackaging;
+  document.getElementById('sMediaUrl').value        = s?.mediaUrl        || '';
+  document.getElementById('sNotes').value           = s?.notes           || '';
+  document.getElementById('supplierModalOverlay').classList.add('open');
+}
+function closeSupplierModal() {
+  document.getElementById('supplierModalOverlay').classList.remove('open');
+  editingSupplierId = null;
+}
+function handleSupplierOverlayClick(e) {
+  if (e.target.id === 'supplierModalOverlay') closeSupplierModal();
+}
+
+async function saveSupplier() {
+  if (isSavingSupplier) return;
+  const name = document.getElementById('sName').value.trim();
+  if (!name) { showToast('Please enter a supplier name.', 'error'); return; }
+
+  const numOrNull = id => { const v = document.getElementById(id).value; return v === '' ? null : parseFloat(v); };
+
+  const supplier = {
+    id:                  editingSupplierId || (Date.now().toString(36) + Math.random().toString(36).slice(2)),
+    name,
+    status:              document.getElementById('sStatus').value,
+    leadTimeDays:        numOrNull('sLeadTime'),
+    moq:                 numOrNull('sMoq'),
+    sampleCost:          numOrNull('sSampleCost'),
+    sampleShipping:      numOrNull('sSampleShipping'),
+    unitPrice100:        numOrNull('sUnit100'),
+    unitPrice300:        numOrNull('sUnit300'),
+    unitPrice500:        numOrNull('sUnit500'),
+    ddpPrice:            numOrNull('sDdp'),
+    freightDutyEstimate: numOrNull('sFreightEst'),
+    fbaFulfillmentFee:   numOrNull('sFbaFee'),
+    cartonL:             numOrNull('sCartonL'),
+    cartonW:             numOrNull('sCartonW'),
+    cartonH:             numOrNull('sCartonH'),
+    grossWeightLb:       numOrNull('sGrossWeight'),
+    netWeightLb:         numOrNull('sNetWeight'),
+    material:            document.getElementById('sMaterial').value.trim(),
+    boardThickness:      document.getElementById('sBoardThickness').value.trim(),
+    privateLabel:        document.getElementById('sPrivateLabel').checked,
+    adjustableShelves:   document.getElementById('sAdjustableShelves').checked,
+    antiTip:             document.getElementById('sAntiTip').checked,
+    reinforced:          document.getElementById('sReinforced').checked,
+    improvedPackaging:   document.getElementById('sImprovedPackaging').checked,
+    mediaUrl:            document.getElementById('sMediaUrl').value.trim(),
+    notes:               document.getElementById('sNotes').value.trim(),
+  };
+
+  isSavingSupplier = true;
+  const btn = document.getElementById('supplierSaveBtn');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+
+  try {
+    await apiCall(editingSupplierId ? 'updateSourcingSupplier' : 'addSourcingSupplier', { supplier });
+    if (editingSupplierId) {
+      sourcingSuppliers[sourcingSuppliers.findIndex(s => s.id === editingSupplierId)] = supplier;
+    } else {
+      sourcingSuppliers.unshift(supplier);
+    }
+    renderSourcingTable();
+    closeSupplierModal();
+    showToast(editingSupplierId ? 'Supplier updated.' : 'Supplier added.', 'success');
+  } catch (e) {
+    showToast('Save failed. Please try again.', 'error');
+  } finally {
+    isSavingSupplier = false;
+    btn.textContent = 'Save Supplier';
+    btn.disabled = false;
+  }
+}
+
+async function deleteSupplier(id) {
+  if (!confirm('Remove this supplier from the comparison?')) return;
+  try {
+    await apiCall('deleteSourcingSupplier', { id });
+    sourcingSuppliers = sourcingSuppliers.filter(s => s.id !== id);
+    renderSourcingTable();
+    showToast('Supplier removed.', 'success');
+  } catch (e) {
+    showToast('Delete failed. Please try again.', 'error');
+  }
 }
